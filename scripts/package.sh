@@ -14,6 +14,13 @@ VERSION="${2:?missing version}"
 OUTZIP="${3:?missing output zip path}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Resolve the output path to absolute before we cd into the staging dir, so the zip is
+# written where the caller expects (not inside $STAGE, and not recursively into itself).
+case "$OUTZIP" in
+    /*) ;;
+    *) OUTZIP="$PWD/$OUTZIP" ;;
+esac
+
 STAGE="$(mktemp -d)"
 cp -r "$ROOT/deploy/." "$STAGE/"
 mkdir -p "$STAGE/startup"
