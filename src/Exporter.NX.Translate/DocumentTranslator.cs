@@ -48,6 +48,11 @@ namespace Oblikovati.Exporter.NX.Translate
                 recipe.Parameters.Add(ParameterTranslator.Translate(expression));
             }
 
+            foreach (NxWorkPlane plane in document.WorkPlanes)
+            {
+                recipe.WorkFeatures.Add(WorkPlaneTranslator.Translate(plane));
+            }
+
             // One id space across sketches, points and entities (matches the Go codec).
             var ids = new IdAllocator();
             var sketches = new SketchTranslator(ids, report);

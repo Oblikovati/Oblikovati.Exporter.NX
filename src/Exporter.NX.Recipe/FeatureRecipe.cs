@@ -19,6 +19,9 @@ namespace Oblikovati.Exporter.NX.Recipe
 
         [YamlMember(Alias = "extrude", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public ExtrudeData? Extrude { get; set; }
+
+        [YamlMember(Alias = "revolve", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public RevolveData? Revolve { get; set; }
     }
 
     /// <summary>
@@ -51,5 +54,25 @@ namespace Oblikovati.Exporter.NX.Recipe
 
         [YamlMember(Alias = "taper", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public double? Taper { get; set; }
+    }
+
+    /// <summary>
+    /// A revolve payload. Mirrors RevolveData in serialize_work.go. Empty axis fields mean
+    /// "revolve about the profile sketch's own centerline". Angle is in radians; 0 means a
+    /// full revolution.
+    /// </summary>
+    public sealed class RevolveData
+    {
+        [YamlMember(Alias = "sketch")]
+        public int Sketch { get; set; }
+
+        [YamlMember(Alias = "profile")]
+        public int Profile { get; set; }
+
+        [YamlMember(Alias = "angle", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public double? Angle { get; set; }
+
+        [YamlMember(Alias = "operation")]
+        public string Operation { get; set; } = "newBody";
     }
 }

@@ -37,6 +37,9 @@ namespace Oblikovati.Exporter.NX.Model
         /// <summary>User/model expressions extracted from the part, in NX order.</summary>
         public IList<NxExpression> Expressions { get; } = new List<NxExpression>();
 
+        /// <summary>Datum work planes extracted from the part, in creation order.</summary>
+        public IList<NxWorkPlane> WorkPlanes { get; } = new List<NxWorkPlane>();
+
         /// <summary>2D sketches extracted from the part, in creation order.</summary>
         public IList<NxSketch> Sketches { get; } = new List<NxSketch>();
 

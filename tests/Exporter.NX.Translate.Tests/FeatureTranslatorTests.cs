@@ -28,6 +28,27 @@ namespace Oblikovati.Exporter.NX.Tests
         }
 
         [Fact]
+        public void TranslatesRevolveInOwnCenterlineMode()
+        {
+            FeatureData feature = Assert.Single(Translate(NxSampleParts.RevolvePart()).Features);
+
+            Assert.Equal("revolve", feature.Kind);
+            RevolveData rev = Assert.IsType<RevolveData>(feature.Revolve);
+            Assert.Equal(0, rev.Sketch);
+            Assert.Equal(0, rev.Profile);
+            Assert.Equal("newBody", rev.Operation);
+            Assert.Null(rev.Angle); // 0 degrees -> full revolution, left unset
+        }
+
+        [Fact]
+        public void MarksCenterlineEntity()
+        {
+            var part = (PartRecipe)new DocumentTranslator()
+                .Translate(NxSampleParts.RevolvePart(), new ExportReport()).Model!;
+            Assert.Contains(part.Sketches[0].Entities, e => e.Centerline == true);
+        }
+
+        [Fact]
         public void MapsBooleanOperations()
         {
             var part = new NxDocument { DisplayName = "p", Kind = NxDocumentKind.Part };

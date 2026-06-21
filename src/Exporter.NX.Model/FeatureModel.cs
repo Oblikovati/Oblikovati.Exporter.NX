@@ -48,4 +48,21 @@ namespace Oblikovati.Exporter.NX.Model
         /// <summary>Draft/taper angle in degrees (0 for a straight extrude).</summary>
         public double TaperDegrees { get; set; }
     }
+
+    /// <summary>
+    /// A revolve of a sketch profile about the sketch's own centerline (the profile sketch
+    /// must contain a line marked <see cref="NxCurve.Centerline"/>). <see cref="AngleDegrees"/>
+    /// of 0 means a full revolution.
+    /// </summary>
+    public sealed class NxRevolve : NxFeature
+    {
+        public int SketchIndex { get; set; }
+
+        public int ProfileIndex { get; set; }
+
+        public NxOperation Operation { get; set; } = NxOperation.NewBody;
+
+        /// <summary>Swept angle in degrees; 0 means a full 360 revolution.</summary>
+        public double AngleDegrees { get; set; }
+    }
 }

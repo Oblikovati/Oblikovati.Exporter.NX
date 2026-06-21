@@ -84,6 +84,7 @@ namespace Oblikovati.Exporter.NX.Translate
                 case NxCurveKind.Line:
                     entity.Points.Add(points.PointId(new NxPointRef(curve.Id, NxCurvePointRole.Start)));
                     entity.Points.Add(points.PointId(new NxPointRef(curve.Id, NxCurvePointRole.End)));
+                    entity.Centerline = curve.Centerline ? true : (bool?)null;
                     break;
                 case NxCurveKind.Circle:
                     entity.Points.Add(points.PointId(new NxPointRef(curve.Id, NxCurvePointRole.Center)));

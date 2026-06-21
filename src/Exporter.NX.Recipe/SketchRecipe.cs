@@ -89,6 +89,9 @@ namespace Oblikovati.Exporter.NX.Recipe
 
         [YamlMember(Alias = "construction", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public bool? Construction { get; set; }
+
+        [YamlMember(Alias = "centerline", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public bool? Centerline { get; set; }
     }
 
     /// <summary>

@@ -29,6 +29,8 @@ namespace Oblikovati.Exporter.NX.Translate
             {
                 case NxExtrude extrude:
                     return TranslateExtrude(extrude);
+                case NxRevolve revolve:
+                    return TranslateRevolve(revolve);
                 default:
                     _report.Unsupported("feature", feature.GetType().Name);
                     return null;
@@ -54,6 +56,26 @@ namespace Oblikovati.Exporter.NX.Translate
                 Kind = "extrude",
                 Name = extrude.Name.Length == 0 ? null : extrude.Name,
                 Extrude = payload,
+            };
+        }
+
+        private static FeatureData TranslateRevolve(NxRevolve revolve)
+        {
+            // Own-centerline mode: the profile sketch carries the axis as a centerline,
+            // so no axis fields are emitted. Angle 0 (full revolution) is left unset.
+            var payload = new RevolveData
+            {
+                Sketch = revolve.SketchIndex,
+                Profile = revolve.ProfileIndex,
+                Operation = OperationName(revolve.Operation),
+                Angle = revolve.AngleDegrees != 0 ? revolve.AngleDegrees * DegToRad : (double?)null,
+            };
+
+            return new FeatureData
+            {
+                Kind = "revolve",
+                Name = revolve.Name.Length == 0 ? null : revolve.Name,
+                Revolve = payload,
             };
         }
 

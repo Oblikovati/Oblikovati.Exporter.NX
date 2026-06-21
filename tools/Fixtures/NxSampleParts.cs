@@ -87,6 +87,61 @@ namespace Oblikovati.Exporter.NX.Fixtures
             return part;
         }
 
+        /// <summary>
+        /// An offset square (x in [20,40], y in [0,20] mm) revolved full about a vertical
+        /// centerline on the Y axis — a washer of 24*pi cm^3 (outer r 4 cm, inner r 2 cm,
+        /// height 2 cm). Exercises revolve about the sketch's own centerline.
+        /// </summary>
+        public static NxDocument RevolvePart()
+        {
+            var part = new NxDocument
+            {
+                DisplayName = "revolve-part",
+                Kind = NxDocumentKind.Part,
+                LengthUnit = "mm",
+            };
+            part.Expressions.Add(new NxExpression { Name = "side", Formula = "20", Unit = "mm" });
+
+            var sketch = new NxSketch { Name = "Section" };
+            const long l0 = 1, l1 = 2, l2 = 3, l3 = 4, axis = 5;
+            sketch.Curves.Add(Line(l0, 20, 0, 40, 0));   // bottom
+            sketch.Curves.Add(Line(l1, 40, 0, 40, 20));  // outer
+            sketch.Curves.Add(Line(l2, 40, 20, 20, 20)); // top
+            sketch.Curves.Add(Line(l3, 20, 20, 20, 0));  // inner
+            NxCurve centerline = Line(axis, 0, 0, 0, 20);
+            centerline.Centerline = true;
+            sketch.Curves.Add(centerline);
+
+            Coincide(sketch, l0, NxCurvePointRole.End, l1, NxCurvePointRole.Start);
+            Coincide(sketch, l1, NxCurvePointRole.End, l2, NxCurvePointRole.Start);
+            Coincide(sketch, l2, NxCurvePointRole.End, l3, NxCurvePointRole.Start);
+            Coincide(sketch, l3, NxCurvePointRole.End, l0, NxCurvePointRole.Start);
+
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Horizontal, l0));
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Horizontal, l2));
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Vertical, l1));
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Vertical, l3));
+            sketch.Constraints.Add(Fix(l0, NxCurvePointRole.Start));
+            sketch.Dimensions.Add(Distance(l0, NxCurvePointRole.Start, l0, NxCurvePointRole.End, "side"));
+            sketch.Dimensions.Add(Distance(l3, NxCurvePointRole.Start, l3, NxCurvePointRole.End, "side"));
+
+            // Pin the centerline (vertical on the Y axis, length "side").
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Vertical, axis));
+            sketch.Constraints.Add(Fix(axis, NxCurvePointRole.Start));
+            sketch.Dimensions.Add(Distance(axis, NxCurvePointRole.Start, axis, NxCurvePointRole.End, "side"));
+
+            part.Sketches.Add(sketch);
+            part.Features.Add(new NxRevolve
+            {
+                Name = "Revolve1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = NxOperation.NewBody,
+                AngleDegrees = 0, // full revolution
+            });
+            return part;
+        }
+
         /// <summary>A circle fixed at the origin with a diameter dimension (DOF 0).</summary>
         public static NxDocument CirclePart()
         {
@@ -106,6 +161,25 @@ namespace Oblikovati.Exporter.NX.Fixtures
             sketch.Dimensions[0].Curves.Add(c0);
 
             part.Sketches.Add(sketch);
+            return part;
+        }
+
+        /// <summary>A part carrying one datum plane offset 10 mm above XY (a fixed frame).</summary>
+        public static NxDocument DatumPlanePart()
+        {
+            var part = new NxDocument
+            {
+                DisplayName = "datum-plane-part",
+                Kind = NxDocumentKind.Part,
+                LengthUnit = "mm",
+            };
+            part.WorkPlanes.Add(new NxWorkPlane
+            {
+                Name = "Datum1",
+                Origin = new double[] { 0, 0, 10 },
+                XAxis = new double[] { 1, 0, 0 },
+                YAxis = new double[] { 0, 1, 0 },
+            });
             return part;
         }
 

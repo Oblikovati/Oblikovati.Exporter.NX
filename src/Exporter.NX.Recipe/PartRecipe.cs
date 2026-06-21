@@ -18,6 +18,10 @@ namespace Oblikovati.Exporter.NX.Recipe
         [YamlMember(Alias = "parameters", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
         public IList<ParameterRecipe> Parameters { get; } = new List<ParameterRecipe>();
 
+        /// <summary>Datum work features (planes/axes/points). Omitted when empty.</summary>
+        [YamlMember(Alias = "workFeatures", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<WorkFeatureData> WorkFeatures { get; } = new List<WorkFeatureData>();
+
         /// <summary>2D sketches. Features reference these by array index. Omitted when empty.</summary>
         [YamlMember(Alias = "sketches", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
         public IList<SketchData> Sketches { get; } = new List<SketchData>();

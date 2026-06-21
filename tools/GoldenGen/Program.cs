@@ -47,6 +47,8 @@ namespace Oblikovati.Exporter.NX.GoldenGen
             yield return NxSampleParts.RectanglePart();
             yield return NxSampleParts.CirclePart();
             yield return NxSampleParts.BoxPart();
+            yield return NxSampleParts.RevolvePart();
+            yield return NxSampleParts.DatumPlanePart();
         }
     }
 }
