@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 using System;
+using System.IO;
 using NXOpen;
 using Oblikovati.Exporter.NX.Model;
 
@@ -42,6 +43,26 @@ namespace Oblikovati.Exporter.NX.Nx
                 LengthUnit = work.PartUnits == PartUnits.Inches ? "in" : "mm",
                 AngleUnit = "deg",
             };
+        }
+
+        /// <summary>
+        /// The folder to write exported documents into: the work part's directory so a
+        /// reopened assembly resolves its components, or the temp folder for an unsaved part.
+        /// </summary>
+        public string OutputDirectory()
+        {
+            Part? work = _session.Parts.Work;
+            string fullPath = work?.FullPath ?? string.Empty;
+            string directory = fullPath.Length == 0 ? string.Empty : Path.GetDirectoryName(fullPath) ?? string.Empty;
+            return directory.Length == 0 ? Path.GetTempPath() : directory;
+        }
+
+        /// <summary>Shows the export summary in NX's listing window.</summary>
+        public void ShowMessage(string text)
+        {
+            ListingWindow window = _session.ListingWindow;
+            window.Open();
+            window.WriteLine(text);
         }
     }
 }

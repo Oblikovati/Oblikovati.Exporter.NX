@@ -49,7 +49,20 @@ separate job (`build.yml`).
 
 ## Distribution
 
-Releases ship a zip laid out for `UGII_USER_DIR` (`deploy/`). See `deploy/README.md`.
+Releases ship a zip laid out for `UGII_USER_DIR` (`deploy/`). See `deploy/README.md`
+for install steps. Pushing a `v*` tag runs `.github/workflows/release.yml`, which (on a
+self-hosted runner with NX) publishes the plugin against the real NXOpen assemblies,
+runs `scripts/package.sh` to stage `deploy/` + the managed DLLs (excluding the NXOpen
+stub), and attaches the zip to the release. To build a zip by hand:
+
+```
+dotnet publish src/Exporter.NX.Entry -c Release -p:UseNxStubs=false -p:NxOpenDir="<NX managed dir>" -o publish
+scripts/package.sh publish 0.1.0 Oblikovati.Exporter.NX-0.1.0.zip
+```
+
+In NX the **Export to Oblikovati** menu item runs the plugin, which writes the `.opd`
+(or `.oad` + components) next to the source part and shows a summary in the listing
+window.
 
 ## License
 

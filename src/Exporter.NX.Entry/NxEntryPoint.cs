@@ -1,35 +1,25 @@
 // SPDX-License-Identifier: GPL-2.0-only
-using System;
-using System.IO;
 using Oblikovati.Exporter.NX.Nx;
-using Oblikovati.Exporter.NX.Recipe;
-using Oblikovati.Exporter.NX.Translate;
 
 namespace Oblikovati.Exporter.NX.Entry
 {
     /// <summary>
-    /// The method NX invokes from the ribbon button (wired in the .men deploy file).
-    /// It is the only place that constructs the real NXOpen-backed adapter and touches
-    /// the filesystem; all logic lives in the injectable <see cref="ExportRunner"/>.
-    /// The richer ribbon/report UI lands in M7.
+    /// The method NX invokes from the ribbon button (wired in the .men deploy file). It is
+    /// the only place that constructs the real NXOpen-backed adapter and a directory sink;
+    /// all logic lives in the testable <see cref="ExportJob"/>.
     /// </summary>
     public static class NxEntryPoint
     {
-        /// <summary>NX managed entry point. Exports the work part next to its source.</summary>
+        /// <summary>
+        /// NX managed entry point. Exports the work document (and, for an assembly, its
+        /// components) next to the source part, then shows the summary in the listing window.
+        /// </summary>
         public static void Main()
         {
-            var runner = new ExportRunner(
-                new NxSessionAdapter(),
-                new DocumentTranslator(),
-                new RecipeYamlWriter());
-
-            ExportOutput result = runner.Run();
-            // An assembly writes its .oad and every referenced component into one folder,
-            // so owner-relative component names resolve on reopen.
-            foreach (ExportFile file in result.Files)
-            {
-                File.WriteAllText(Path.Combine(Path.GetTempPath(), file.FileName), file.Yaml);
-            }
+            var adapter = new NxSessionAdapter();
+            var sink = new DirectoryDocumentSink(adapter.OutputDirectory());
+            string summary = ExportJob.Run(adapter, sink);
+            adapter.ShowMessage(summary);
         }
 
         /// <summary>Required by NX to unload the managed assembly cleanly.</summary>

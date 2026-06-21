@@ -26,7 +26,21 @@ namespace NXOpen
         /// <summary>Leaf file name of the part (without directory or extension).</summary>
         public virtual string Leaf => throw StubError();
 
+        /// <summary>Full path of the part's .prt file on disk.</summary>
+        public virtual string FullPath => throw StubError();
+
         public virtual PartUnits PartUnits => throw StubError();
+    }
+
+    /// <summary>Stub of NXOpen.ListingWindow (the NX text output window).</summary>
+    public class ListingWindow
+    {
+        public virtual void Open() => throw new InvalidOperationException(StubMessage);
+
+        public virtual void WriteLine(string line) => throw new InvalidOperationException(StubMessage);
+
+        private const string StubMessage =
+            "NXOpen stub member invoked: this assembly is compile-only; run inside NX with the real NXOpen.dll";
     }
 
     /// <summary>Stub of NXOpen.PartCollection.</summary>
@@ -43,10 +57,13 @@ namespace NXOpen
     /// <summary>Stub of NXOpen.Session.</summary>
     public class Session
     {
-        public virtual PartCollection Parts => throw new InvalidOperationException(
-            "NXOpen stub member invoked: this assembly is compile-only; run inside NX with the real NXOpen.dll");
+        public virtual PartCollection Parts => throw new InvalidOperationException(StubMessage);
 
-        public static Session GetSession() => throw new InvalidOperationException(
-            "NXOpen stub member invoked: this assembly is compile-only; run inside NX with the real NXOpen.dll");
+        public virtual ListingWindow ListingWindow => throw new InvalidOperationException(StubMessage);
+
+        public static Session GetSession() => throw new InvalidOperationException(StubMessage);
+
+        private const string StubMessage =
+            "NXOpen stub member invoked: this assembly is compile-only; run inside NX with the real NXOpen.dll";
     }
 }
