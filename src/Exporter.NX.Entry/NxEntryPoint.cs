@@ -23,10 +23,13 @@ namespace Oblikovati.Exporter.NX.Entry
                 new DocumentTranslator(),
                 new RecipeYamlWriter());
 
-            ExportResult result = runner.Run();
-            string outputPath = Path.Combine(
-                Path.GetTempPath(), result.FileName);
-            File.WriteAllText(outputPath, result.Yaml);
+            ExportOutput result = runner.Run();
+            // An assembly writes its .oad and every referenced component into one folder,
+            // so owner-relative component names resolve on reopen.
+            foreach (ExportFile file in result.Files)
+            {
+                File.WriteAllText(Path.Combine(Path.GetTempPath(), file.FileName), file.Yaml);
+            }
         }
 
         /// <summary>Required by NX to unload the managed assembly cleanly.</summary>

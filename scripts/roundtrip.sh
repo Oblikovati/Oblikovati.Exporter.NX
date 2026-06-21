@@ -18,14 +18,18 @@ status=0
 for f in "$OUT"/*.opd "$OUT"/*.oad; do
     [ -e "$f" ] || continue
     name="$(basename "$f")"
-    # 1) The file loads and recomputes in the real reader.
+    # 1) The file loads and recomputes in the real reader (for an .oad this also
+    #    resolves and places its referenced component files).
     if ! "$CLI" open "$f" >/dev/null; then
         echo "FAIL $name (open)"
         status=1
         continue
     fi
-    # 2) Every sketch is fully constrained (DOF 0) with a closed profile.
-    if "$CLI" script run "$ROOT/scripts/validate_sketches.lua" --doc "$f" >/dev/null 2>&1; then
+    # 2) For parts, every sketch is fully constrained (DOF 0) with a closed profile.
+    #    Assemblies (.oad) have no part sketch context, so the open check suffices.
+    if [[ "$f" == *.oad ]]; then
+        echo "OK   $name"
+    elif "$CLI" script run "$ROOT/scripts/validate_sketches.lua" --doc "$f" >/dev/null 2>&1; then
         echo "OK   $name"
     else
         echo "FAIL $name (sketch validation)"

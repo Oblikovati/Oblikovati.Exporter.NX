@@ -254,6 +254,29 @@ namespace Oblikovati.Exporter.NX.Fixtures
             return part;
         }
 
+        /// <summary>
+        /// An assembly placing the same 60 cm^3 box twice (instances at the origin and at
+        /// x = 100 mm). The shared component exports once; the .oad references it by name.
+        /// </summary>
+        public static NxDocument AssemblyDoc()
+        {
+            NxDocument box = MakeBox("box-component", 0);
+            var assembly = new NxDocument
+            {
+                DisplayName = "assembly",
+                Kind = NxDocumentKind.Assembly,
+                LengthUnit = "mm",
+            };
+            assembly.Occurrences.Add(new NxOccurrence { Name = "box-component:1", Component = box });
+            assembly.Occurrences.Add(new NxOccurrence
+            {
+                Name = "box-component:2",
+                Component = box,
+                Position = new double[] { 100, 0, 0 },
+            });
+            return assembly;
+        }
+
         /// <summary>A part carrying one datum plane offset 10 mm above XY (a fixed frame).</summary>
         public static NxDocument DatumPlanePart()
         {

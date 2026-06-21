@@ -45,6 +45,9 @@ namespace Oblikovati.Exporter.NX.Model
 
         /// <summary>Feature history (extrudes, etc.) in creation order.</summary>
         public IList<NxFeature> Features { get; } = new List<NxFeature>();
+
+        /// <summary>Component placements, when this document is an assembly.</summary>
+        public IList<NxOccurrence> Occurrences { get; } = new List<NxOccurrence>();
     }
 
     /// <summary>

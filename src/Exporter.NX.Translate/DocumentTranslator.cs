@@ -7,12 +7,14 @@ using Oblikovati.Exporter.NX.Recipe;
 namespace Oblikovati.Exporter.NX.Translate
 {
     /// <summary>
-    /// Top of the translation core: turns an NX-neutral <see cref="NxDocument"/> into a
-    /// serializable <see cref="OblikovatiDocument"/>. Assembly translation (.oad)
-    /// arrives in M6; until then a non-part document raises a clear error.
+    /// Builds a serializable <see cref="OblikovatiDocument"/> from an NX-neutral
+    /// <see cref="NxDocument"/>. Part documents are self-contained; assembly documents need
+    /// their occurrences' component file names from the tree walk (see DocumentExporter),
+    /// so that path uses <see cref="TranslateAssembly"/>.
     /// </summary>
     public sealed class DocumentTranslator
     {
+        /// <summary>Translates a part document. Throws for a non-part (use the exporter for assemblies).</summary>
         public OblikovatiDocument Translate(NxDocument document, ExportReport report)
         {
             if (document == null) throw new ArgumentNullException(nameof(document));
@@ -21,7 +23,7 @@ namespace Oblikovati.Exporter.NX.Translate
             if (document.Kind != NxDocumentKind.Part)
             {
                 throw new NotSupportedException(
-                    $"document kind '{document.Kind}' is not translatable yet; expected Part");
+                    $"document kind '{document.Kind}' is not a part; assemblies go through DocumentExporter");
             }
 
             return new OblikovatiDocument
@@ -30,6 +32,32 @@ namespace Oblikovati.Exporter.NX.Translate
                 DocumentType = (int)NxDocumentKind.Part,
                 DisplayName = document.DisplayName,
                 Model = TranslatePart(document, report),
+            };
+        }
+
+        /// <summary>
+        /// Builds an assembly document from its display info and the already-resolved
+        /// occurrences (their component file names supplied by the tree walk).
+        /// </summary>
+        public OblikovatiDocument TranslateAssembly(NxDocument document, IReadOnlyList<OccurrenceData> occurrences)
+        {
+            if (document == null) throw new ArgumentNullException(nameof(document));
+
+            var recipe = new AssemblyRecipe
+            {
+                Units = new Units { Length = document.LengthUnit, Angle = document.AngleUnit },
+            };
+            foreach (OccurrenceData occurrence in occurrences)
+            {
+                recipe.Occurrences.Add(occurrence);
+            }
+
+            return new OblikovatiDocument
+            {
+                SchemaVersion = 2,
+                DocumentType = (int)NxDocumentKind.Assembly,
+                DisplayName = document.DisplayName,
+                Model = recipe,
             };
         }
 

@@ -18,13 +18,14 @@ namespace Oblikovati.Exporter.NX.Tests
                 new DocumentTranslator(),
                 new RecipeYamlWriter());
 
-            ExportResult result = runner.Run();
+            ExportOutput result = runner.Run();
 
-            Assert.Equal("bracket.opd", result.FileName);
-            Assert.Contains("schemaVersion: 2", result.Yaml);
-            Assert.Contains("documentType: 1", result.Yaml);
-            Assert.Contains("displayName: bracket", result.Yaml);
-            Assert.Contains("length: mm", result.Yaml);
+            ExportFile file = Assert.Single(result.Files);
+            Assert.Equal("bracket.opd", file.FileName);
+            Assert.Contains("schemaVersion: 2", file.Yaml);
+            Assert.Contains("documentType: 1", file.Yaml);
+            Assert.Contains("displayName: bracket", file.Yaml);
+            Assert.Contains("length: mm", file.Yaml);
             Assert.False(result.Report.HasWarnings);
         }
     }

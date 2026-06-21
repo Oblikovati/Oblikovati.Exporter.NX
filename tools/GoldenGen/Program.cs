@@ -12,7 +12,8 @@ namespace Oblikovati.Exporter.NX.GoldenGen
     /// <summary>
     /// Writes golden documents to the directory given as the first argument. Fixtures are
     /// the shared <see cref="NxSampleParts"/> so CI Job 2 opens the exact inputs the unit
-    /// tests assert, with the real oblikovati-cli.
+    /// tests assert, with the real oblikovati-cli. Each fixture goes through the full
+    /// document exporter, so an assembly fixture emits its .oad plus its component files.
     /// </summary>
     internal static class Program
     {
@@ -27,14 +28,16 @@ namespace Oblikovati.Exporter.NX.GoldenGen
             string outDir = args[0];
             Directory.CreateDirectory(outDir);
 
-            var translator = new DocumentTranslator();
+            var exporter = new DocumentExporter(new DocumentTranslator());
             var writer = new RecipeYamlWriter();
             foreach (NxDocument fixture in Fixtures())
             {
-                OblikovatiDocument doc = translator.Translate(fixture, new ExportReport());
-                string path = Path.Combine(outDir, fixture.DisplayName + ".opd");
-                File.WriteAllText(path, writer.Write(doc));
-                Console.WriteLine("wrote " + path);
+                foreach (TranslatedDocument doc in exporter.Export(fixture, new ExportReport()))
+                {
+                    string path = Path.Combine(outDir, doc.FileName);
+                    File.WriteAllText(path, writer.Write(doc.Document));
+                    Console.WriteLine("wrote " + path);
+                }
             }
 
             return 0;
@@ -52,6 +55,7 @@ namespace Oblikovati.Exporter.NX.GoldenGen
             yield return NxSampleParts.RectPatternPart();
             yield return NxSampleParts.MirrorPart();
             yield return NxSampleParts.CircularPatternPart();
+            yield return NxSampleParts.AssemblyDoc();
         }
     }
 }
