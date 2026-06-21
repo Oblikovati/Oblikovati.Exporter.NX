@@ -34,14 +34,25 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.x'
-      - name: Checkout Oblikovati (for the CLI reader)
+      # Both repos are public, so no token is needed. oblikovati-cli lives in the GPL
+      # application module, which `require`s the Apache api module resolved (in local dev)
+      # via go.work; CI has no go.work, so we check the api sibling out and inject a
+      # `replace`, exactly as the Oblikovati repo's own CI does.
+      - name: Checkout Oblikovati (CLI reader)
         uses: actions/checkout@v4
         with:
           repository: Oblikovati/Oblikovati
+          ref: develop
           path: _oblikovati
-          token: ${{ secrets.OBLIKOVATI_REPO_TOKEN }}
+      - name: Checkout Oblikovati.API (contract sibling)
+        uses: actions/checkout@v4
+        with:
+          repository: Oblikovati/Oblikovati.API
+          path: _oblikovati-api
       - name: Build oblikovati-cli
-        run: go build -o "$RUNNER_TEMP/oblikovati-cli" ./cmd/oblikovati-cli
         working-directory: _oblikovati
+        run: |
+          go mod edit -replace oblikovati.org/api=../_oblikovati-api
+          go build -o "$RUNNER_TEMP/oblikovati-cli" ./cmd/oblikovati-cli
       - name: Round-trip golden documents
         run: scripts/roundtrip.sh "$RUNNER_TEMP/oblikovati-cli"
