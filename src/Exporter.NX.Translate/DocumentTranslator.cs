@@ -28,11 +28,11 @@ namespace Oblikovati.Exporter.NX.Translate
                 SchemaVersion = 2,
                 DocumentType = (int)NxDocumentKind.Part,
                 DisplayName = document.DisplayName,
-                Model = TranslatePart(document),
+                Model = TranslatePart(document, report),
             };
         }
 
-        private static PartRecipe TranslatePart(NxDocument document)
+        private static PartRecipe TranslatePart(NxDocument document, ExportReport report)
         {
             var recipe = new PartRecipe
             {
@@ -46,6 +46,15 @@ namespace Oblikovati.Exporter.NX.Translate
             foreach (NxExpression expression in document.Expressions)
             {
                 recipe.Parameters.Add(ParameterTranslator.Translate(expression));
+            }
+
+            // One id space across sketches, points and entities (matches the Go codec).
+            var ids = new IdAllocator();
+            var sketches = new SketchTranslator(ids, report);
+            foreach (NxSketch sketch in document.Sketches)
+            {
+                int sketchId = ids.Next();
+                recipe.Sketches.Add(sketches.Translate(sketch, sketchId));
             }
 
             return recipe;

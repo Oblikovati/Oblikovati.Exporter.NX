@@ -17,10 +17,18 @@ dotnet run --project "$ROOT/tools/GoldenGen" -c Release -- "$OUT"
 status=0
 for f in "$OUT"/*.opd "$OUT"/*.oad; do
     [ -e "$f" ] || continue
-    if "$CLI" open "$f" >/dev/null; then
-        echo "OK   $(basename "$f")"
+    name="$(basename "$f")"
+    # 1) The file loads and recomputes in the real reader.
+    if ! "$CLI" open "$f" >/dev/null; then
+        echo "FAIL $name (open)"
+        status=1
+        continue
+    fi
+    # 2) Every sketch is fully constrained (DOF 0) with a closed profile.
+    if "$CLI" script run "$ROOT/scripts/validate_sketches.lua" --doc "$f" >/dev/null 2>&1; then
+        echo "OK   $name"
     else
-        echo "FAIL $(basename "$f")"
+        echo "FAIL $name (sketch validation)"
         status=1
     fi
 done

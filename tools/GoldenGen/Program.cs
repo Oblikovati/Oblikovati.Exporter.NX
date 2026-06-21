@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Oblikovati.Exporter.NX.Fixtures;
 using Oblikovati.Exporter.NX.Model;
 using Oblikovati.Exporter.NX.Recipe;
 using Oblikovati.Exporter.NX.Translate;
@@ -9,9 +10,9 @@ using Oblikovati.Exporter.NX.Translate;
 namespace Oblikovati.Exporter.NX.GoldenGen
 {
     /// <summary>
-    /// Writes golden documents to the directory given as the first argument. Each
-    /// fixture exercises a slice of the translator so CI Job 2 can open them with the
-    /// real oblikovati-cli.
+    /// Writes golden documents to the directory given as the first argument. Fixtures are
+    /// the shared <see cref="NxSampleParts"/> so CI Job 2 opens the exact inputs the unit
+    /// tests assert, with the real oblikovati-cli.
     /// </summary>
     internal static class Program
     {
@@ -41,21 +42,10 @@ namespace Oblikovati.Exporter.NX.GoldenGen
 
         private static IEnumerable<NxDocument> Fixtures()
         {
-            yield return new NxDocument
-            {
-                DisplayName = "empty-part",
-                Kind = NxDocumentKind.Part,
-            };
-
-            var parametric = new NxDocument
-            {
-                DisplayName = "parametric-part",
-                Kind = NxDocumentKind.Part,
-                LengthUnit = "mm",
-            };
-            parametric.Expressions.Add(new NxExpression { Name = "width", Formula = "40", Unit = "mm" });
-            parametric.Expressions.Add(new NxExpression { Name = "twice", Formula = "width * 2", Unit = "mm" });
-            yield return parametric;
+            yield return NxSampleParts.EmptyPart();
+            yield return NxSampleParts.ParametricPart();
+            yield return NxSampleParts.RectanglePart();
+            yield return NxSampleParts.CirclePart();
         }
     }
 }

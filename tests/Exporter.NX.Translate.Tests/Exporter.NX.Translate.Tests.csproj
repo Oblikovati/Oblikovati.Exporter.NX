@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Exporter.NX.Translate\Exporter.NX.Translate.csproj" />
     <ProjectReference Include="..\..\src\Exporter.NX.Nx\Exporter.NX.Nx.csproj" />
     <ProjectReference Include="..\..\src\Exporter.NX.Entry\Exporter.NX.Entry.csproj" />
+    <ProjectReference Include="..\..\tools\Fixtures\Exporter.NX.Fixtures.csproj" />
   </ItemGroup>
 
 </Project>
