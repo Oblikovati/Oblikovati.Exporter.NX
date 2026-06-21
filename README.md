@@ -50,12 +50,16 @@ separate job (`build.yml`).
 ## Distribution
 
 Releases ship a zip laid out for `UGII_USER_DIR` (`deploy/`). See `deploy/README.md`
-for install steps. Pushing a `v*` tag runs `.github/workflows/release.yml`, which (on a
-self-hosted runner with NX) publishes the plugin against the real NXOpen assemblies,
-runs `scripts/package.sh` to stage `deploy/` + the managed DLLs (excluding the NXOpen
-stub), and attaches the zip to the release. To build a zip by hand:
+for install steps. **Every merge to `main`** runs `.github/workflows/release.yml`, which
+publishes the plugin against the NXOpen facade (the reference-assembly model — the shipped
+assemblies bind to the real `NXOpen.dll` at load time inside NX), runs `scripts/package.sh`
+to stage `deploy/` + the managed DLLs (excluding the facade stub), and attaches the zip to
+a GitHub **prerelease** (`v0.1.<run>`). These are alpha builds — validate on your NX
+version. To build a zip by hand (optionally against the real NXOpen assemblies):
 
 ```
+dotnet publish src/Exporter.NX.Entry -c Release -o publish   # facade
+# or, on a machine with NX:
 dotnet publish src/Exporter.NX.Entry -c Release -p:UseNxStubs=false -p:NxOpenDir="<NX managed dir>" -o publish
 scripts/package.sh publish 0.1.0 Oblikovati.Exporter.NX-0.1.0.zip
 ```

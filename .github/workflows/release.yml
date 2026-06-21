@@ -1,38 +1,47 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# Builds the installable release zip and attaches it to the GitHub Release for a tag.
-#
-# The real plugin must link the genuine Siemens NXOpen assemblies (the CI build in
-# build.yml links a compile-only stub and cannot produce a loadable plugin). So this
-# job runs on a SELF-HOSTED runner that has NX installed and is labelled `nx`; set the
-# NX_OPEN_DIR repo/environment variable to the directory holding the managed NXOpen
-# assemblies (…\NXBIN\managed or …\UGOPEN\NET). build.yml remains the correctness gate.
+# Publishes an installable release to GitHub Releases on every merge to main (and on
+# manual dispatch). The plugin is compiled against the NXOpen *facade* on a hosted runner
+# — the reference-assembly model: the shipped assemblies bind the assembly name "NXOpen",
+# which the real NXOpen.dll satisfies at load time inside NX (the facade stub is excluded
+# from the zip). This keeps releases automatic without a licensed NX in CI; alpha builds
+# are marked as prereleases and should be validated on a real NX install.
 name: release
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write # create tags + releases
 
 jobs:
-  package:
-    runs-on: [self-hosted, nx]
+  release:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Publish plugin against the real NXOpen assemblies
-        shell: bash
-        run: |
-          dotnet publish src/Exporter.NX.Entry -c Release \
-            -p:UseNxStubs=false -p:NxOpenDir="${NX_OPEN_DIR}" -o publish
-        env:
-          NX_OPEN_DIR: ${{ vars.NX_OPEN_DIR }}
-      - name: Package the UGII_USER_DIR release zip
-        shell: bash
-        run: scripts/package.sh publish "${GITHUB_REF_NAME}" "Oblikovati.Exporter.NX-${GITHUB_REF_NAME}.zip"
-      - name: Attach the zip to the release
+      - name: Compute version
+        id: ver
+        run: echo "version=0.1.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      - name: Publish the plugin (against the NXOpen facade)
+        run: dotnet publish src/Exporter.NX.Entry -c Release -o publish
+      - name: Package the UGII_USER_DIR zip
+        run: scripts/package.sh publish "${{ steps.ver.outputs.version }}" "Oblikovati.Exporter.NX-${{ steps.ver.outputs.version }}.zip"
+      - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: gh release upload "${GITHUB_REF_NAME}" "Oblikovati.Exporter.NX-${GITHUB_REF_NAME}.zip" --clobber
+        run: |
+          gh release create "v${{ steps.ver.outputs.version }}" \
+            "Oblikovati.Exporter.NX-${{ steps.ver.outputs.version }}.zip" \
+            --title "Oblikovati.Exporter.NX v${{ steps.ver.outputs.version }}" \
+            --prerelease \
+            --target "${{ github.sha }}" \
+            --notes "Automated alpha build from ${{ github.sha }}.
+
+          Install: unzip into a folder and point NX at it via \`UGII_USER_DIR\` (see deploy/README.md). The **Export to Oblikovati** menu item writes native \`.opd\`/\`.oad\` documents.
+
+          Built against the NXOpen facade (hosted CI); validate on your NX version before production use."
