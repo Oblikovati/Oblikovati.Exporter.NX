@@ -57,6 +57,16 @@ namespace Oblikovati.Exporter.NX.Translate
                 recipe.Sketches.Add(sketches.Translate(sketch, sketchId));
             }
 
+            var features = new FeatureTranslator(report);
+            foreach (NxFeature feature in document.Features)
+            {
+                FeatureData? translated = features.Translate(feature);
+                if (translated != null)
+                {
+                    recipe.Features.Add(translated);
+                }
+            }
+
             return recipe;
         }
     }

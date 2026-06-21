@@ -67,6 +67,26 @@ namespace Oblikovati.Exporter.NX.Fixtures
             return part;
         }
 
+        /// <summary>
+        /// The fully-constrained rectangle extruded 50 mm into a 40x30x50 mm box (volume
+        /// 60 cm^3) — exercises the sketch -> solid pipeline end to end.
+        /// </summary>
+        public static NxDocument BoxPart()
+        {
+            NxDocument part = RectanglePart();
+            part.DisplayName = "box-part";
+            part.Features.Add(new NxExtrude
+            {
+                Name = "Extrude1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = NxOperation.NewBody,
+                Direction = NxExtentDirection.Positive,
+                Distance = 50,
+            });
+            return part;
+        }
+
         /// <summary>A circle fixed at the origin with a diameter dimension (DOF 0).</summary>
         public static NxDocument CirclePart()
         {

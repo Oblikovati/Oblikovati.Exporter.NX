@@ -39,6 +39,9 @@ namespace Oblikovati.Exporter.NX.Model
 
         /// <summary>2D sketches extracted from the part, in creation order.</summary>
         public IList<NxSketch> Sketches { get; } = new List<NxSketch>();
+
+        /// <summary>Feature history (extrudes, etc.) in creation order.</summary>
+        public IList<NxFeature> Features { get; } = new List<NxFeature>();
     }
 
     /// <summary>

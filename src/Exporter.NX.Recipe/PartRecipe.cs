@@ -21,6 +21,10 @@ namespace Oblikovati.Exporter.NX.Recipe
         /// <summary>2D sketches. Features reference these by array index. Omitted when empty.</summary>
         [YamlMember(Alias = "sketches", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
         public IList<SketchData> Sketches { get; } = new List<SketchData>();
+
+        /// <summary>Feature history program, in order. Omitted when empty.</summary>
+        [YamlMember(Alias = "features", DefaultValuesHandling = DefaultValuesHandling.OmitEmptyCollections)]
+        public IList<FeatureData> Features { get; } = new List<FeatureData>();
     }
 
     /// <summary>
