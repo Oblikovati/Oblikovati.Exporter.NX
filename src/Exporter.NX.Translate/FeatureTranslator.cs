@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 using System;
+using System.Collections.Generic;
 using Oblikovati.Exporter.NX.Model;
 using Oblikovati.Exporter.NX.Recipe;
 
@@ -22,8 +23,12 @@ namespace Oblikovati.Exporter.NX.Translate
             _report = report ?? throw new ArgumentNullException(nameof(report));
         }
 
-        /// <summary>Returns the recipe feature for <paramref name="feature"/>, or null if unsupported.</summary>
-        public FeatureData? Translate(NxFeature feature)
+        /// <summary>
+        /// Returns the recipe feature for <paramref name="feature"/>, or null if unsupported
+        /// or (for a pattern/mirror) one of its sources was itself skipped.
+        /// <paramref name="sourceIndex"/> maps an IR feature index to the recipe feature index.
+        /// </summary>
+        public FeatureData? Translate(NxFeature feature, IReadOnlyDictionary<int, int> sourceIndex)
         {
             switch (feature)
             {
@@ -31,11 +36,100 @@ namespace Oblikovati.Exporter.NX.Translate
                     return TranslateExtrude(extrude);
                 case NxRevolve revolve:
                     return TranslateRevolve(revolve);
+                case NxRectangularPattern rect:
+                    return TranslateRectPattern(rect, sourceIndex);
+                case NxCircularPattern circ:
+                    return TranslateCircPattern(circ, sourceIndex);
+                case NxMirror mirror:
+                    return TranslateMirror(mirror, sourceIndex);
                 default:
                     _report.Unsupported("feature", feature.GetType().Name);
                     return null;
             }
         }
+
+        private FeatureData? TranslateRectPattern(NxRectangularPattern pattern, IReadOnlyDictionary<int, int> sourceIndex)
+        {
+            if (!TryResolveSources(pattern, sourceIndex, out var sources))
+            {
+                return null;
+            }
+
+            var payload = new RectPatternData
+            {
+                CountX = pattern.CountX,
+                CountY = pattern.CountY,
+                StepX = Scale(pattern.StepX),
+                StepY = Scale(pattern.StepY),
+            };
+            AddRange(payload.Source, sources);
+            return new FeatureData { Kind = "rectangular-pattern", Name = NameOf(pattern), RectangularPattern = payload };
+        }
+
+        private FeatureData? TranslateCircPattern(NxCircularPattern pattern, IReadOnlyDictionary<int, int> sourceIndex)
+        {
+            if (!TryResolveSources(pattern, sourceIndex, out var sources))
+            {
+                return null;
+            }
+
+            var payload = new CircPatternData
+            {
+                Count = pattern.Count,
+                Angle = (pattern.AngleDegrees == 0 ? 360.0 : pattern.AngleDegrees) * DegToRad,
+                AxisPoint = Scale(pattern.AxisPoint),
+                AxisDir = (double[])pattern.AxisDir.Clone(),
+            };
+            AddRange(payload.Source, sources);
+            return new FeatureData { Kind = "circular-pattern", Name = NameOf(pattern), CircularPattern = payload };
+        }
+
+        private FeatureData? TranslateMirror(NxMirror mirror, IReadOnlyDictionary<int, int> sourceIndex)
+        {
+            if (!TryResolveSources(mirror, sourceIndex, out var sources))
+            {
+                return null;
+            }
+
+            var payload = new MirrorData
+            {
+                Origin = Scale(mirror.PlaneOrigin),
+                Normal = (double[])mirror.PlaneNormal.Clone(),
+            };
+            AddRange(payload.Source, sources);
+            return new FeatureData { Kind = "mirror", Name = NameOf(mirror), Mirror = payload };
+        }
+
+        // Maps a replicating feature's IR source indices to recipe program indices. Fails
+        // (reports + returns false) if any source was skipped, since the pattern can't bind.
+        private bool TryResolveSources(
+            NxReplicatingFeature feature, IReadOnlyDictionary<int, int> sourceIndex, out List<int> resolved)
+        {
+            resolved = new List<int>(feature.SourceFeatureIndices.Count);
+            foreach (int ir in feature.SourceFeatureIndices)
+            {
+                if (!sourceIndex.TryGetValue(ir, out int recipeIndex))
+                {
+                    _report.Warn($"{feature.GetType().Name} '{feature.Name}' references feature {ir}, " +
+                        "which was not translated; skipped");
+                    return false;
+                }
+
+                resolved.Add(recipeIndex);
+            }
+
+            return true;
+        }
+
+        private static void AddRange(IList<int> target, IEnumerable<int> values)
+        {
+            foreach (int v in values) target.Add(v);
+        }
+
+        private static string? NameOf(NxFeature feature) =>
+            feature.Name.Length == 0 ? null : feature.Name;
+
+        private static double[] Scale(double[] v) => new[] { v[0] * MmToCm, v[1] * MmToCm, v[2] * MmToCm };
 
         private static FeatureData TranslateExtrude(NxExtrude extrude)
         {

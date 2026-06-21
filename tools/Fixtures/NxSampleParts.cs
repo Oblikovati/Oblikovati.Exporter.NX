@@ -164,6 +164,96 @@ namespace Oblikovati.Exporter.NX.Fixtures
             return part;
         }
 
+        /// <summary>Box (40x30 mm, extruded 50 mm = 60 cm^3) replicated 1x3 along +X (180 cm^3).</summary>
+        public static NxDocument RectPatternPart()
+        {
+            NxDocument part = MakeBox("rect-pattern-part", 0);
+            var pattern = new NxRectangularPattern
+            {
+                Name = "Pattern1",
+                CountX = 3,
+                CountY = 1,
+                StepX = new double[] { 60, 0, 0 },
+                StepY = new double[] { 0, 0, 0 },
+            };
+            pattern.SourceFeatureIndices.Add(0); // the extrude
+            part.Features.Add(pattern);
+            return part;
+        }
+
+        /// <summary>Box mirrored across the YZ plane (x = 0): source + reflection = 120 cm^3.</summary>
+        public static NxDocument MirrorPart()
+        {
+            NxDocument part = MakeBox("mirror-part", 0);
+            var mirror = new NxMirror
+            {
+                Name = "Mirror1",
+                PlaneOrigin = new double[] { 0, 0, 0 },
+                PlaneNormal = new double[] { 1, 0, 0 },
+            };
+            mirror.SourceFeatureIndices.Add(0);
+            part.Features.Add(mirror);
+            return part;
+        }
+
+        /// <summary>Box offset 100 mm from the Z axis, circular-patterned 4x full turn (240 cm^3).</summary>
+        public static NxDocument CircularPatternPart()
+        {
+            NxDocument part = MakeBox("circular-pattern-part", 100);
+            var pattern = new NxCircularPattern
+            {
+                Name = "Pattern1",
+                Count = 4,
+                AngleDegrees = 0, // full revolution
+                AxisPoint = new double[] { 0, 0, 0 },
+                AxisDir = new double[] { 0, 0, 1 },
+            };
+            pattern.SourceFeatureIndices.Add(0);
+            part.Features.Add(pattern);
+            return part;
+        }
+
+        /// <summary>
+        /// A fully-constrained 40x30 mm rectangle whose lower-left corner sits at
+        /// (x0, 0) mm, extruded 50 mm. The shared builder behind the pattern/mirror boxes.
+        /// </summary>
+        private static NxDocument MakeBox(string name, double x0)
+        {
+            var part = new NxDocument { DisplayName = name, Kind = NxDocumentKind.Part, LengthUnit = "mm" };
+            part.Expressions.Add(new NxExpression { Name = "bw", Formula = "40", Unit = "mm" });
+            part.Expressions.Add(new NxExpression { Name = "bh", Formula = "30", Unit = "mm" });
+
+            var sketch = new NxSketch { Name = "Base" };
+            const long l0 = 1, l1 = 2, l2 = 3, l3 = 4;
+            sketch.Curves.Add(Line(l0, x0, 0, x0 + 40, 0));
+            sketch.Curves.Add(Line(l1, x0 + 40, 0, x0 + 40, 30));
+            sketch.Curves.Add(Line(l2, x0 + 40, 30, x0, 30));
+            sketch.Curves.Add(Line(l3, x0, 30, x0, 0));
+            Coincide(sketch, l0, NxCurvePointRole.End, l1, NxCurvePointRole.Start);
+            Coincide(sketch, l1, NxCurvePointRole.End, l2, NxCurvePointRole.Start);
+            Coincide(sketch, l2, NxCurvePointRole.End, l3, NxCurvePointRole.Start);
+            Coincide(sketch, l3, NxCurvePointRole.End, l0, NxCurvePointRole.Start);
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Horizontal, l0));
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Horizontal, l2));
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Vertical, l1));
+            sketch.Constraints.Add(OnCurves(NxConstraintKind.Vertical, l3));
+            sketch.Constraints.Add(Fix(l0, NxCurvePointRole.Start));
+            sketch.Dimensions.Add(Distance(l0, NxCurvePointRole.Start, l0, NxCurvePointRole.End, "bw"));
+            sketch.Dimensions.Add(Distance(l3, NxCurvePointRole.Start, l3, NxCurvePointRole.End, "bh"));
+            part.Sketches.Add(sketch);
+
+            part.Features.Add(new NxExtrude
+            {
+                Name = "Extrude1",
+                SketchIndex = 0,
+                ProfileIndex = 0,
+                Operation = NxOperation.NewBody,
+                Direction = NxExtentDirection.Positive,
+                Distance = 50,
+            });
+            return part;
+        }
+
         /// <summary>A part carrying one datum plane offset 10 mm above XY (a fixed frame).</summary>
         public static NxDocument DatumPlanePart()
         {

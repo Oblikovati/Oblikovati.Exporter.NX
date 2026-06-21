@@ -22,6 +22,15 @@ namespace Oblikovati.Exporter.NX.Recipe
 
         [YamlMember(Alias = "revolve", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public RevolveData? Revolve { get; set; }
+
+        [YamlMember(Alias = "rectangularPattern", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public RectPatternData? RectangularPattern { get; set; }
+
+        [YamlMember(Alias = "circularPattern", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public CircPatternData? CircularPattern { get; set; }
+
+        [YamlMember(Alias = "mirror", DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public MirrorData? Mirror { get; set; }
     }
 
     /// <summary>
@@ -74,5 +83,66 @@ namespace Oblikovati.Exporter.NX.Recipe
 
         [YamlMember(Alias = "operation")]
         public string Operation { get; set; } = "newBody";
+    }
+
+    /// <summary>
+    /// A rectangular-pattern payload. Mirrors RectPatternData in serialize_pattern.go.
+    /// <see cref="Source"/> are program indices into the features list; step vectors are
+    /// the centimetre offset between adjacent copies.
+    /// </summary>
+    public sealed class RectPatternData
+    {
+        [YamlMember(Alias = "source")]
+        public IList<int> Source { get; } = new List<int>();
+
+        [YamlMember(Alias = "countX")]
+        public int CountX { get; set; }
+
+        [YamlMember(Alias = "countY")]
+        public int CountY { get; set; }
+
+        [YamlMember(Alias = "stepX")]
+        public double[] StepX { get; set; } = { 0, 0, 0 };
+
+        [YamlMember(Alias = "stepY")]
+        public double[] StepY { get; set; } = { 0, 0, 0 };
+    }
+
+    /// <summary>A circular-pattern payload. Mirrors CircPatternData. Angle is radians.</summary>
+    public sealed class CircPatternData
+    {
+        [YamlMember(Alias = "source")]
+        public IList<int> Source { get; } = new List<int>();
+
+        [YamlMember(Alias = "count")]
+        public int Count { get; set; }
+
+        [YamlMember(Alias = "angle")]
+        public double Angle { get; set; }
+
+        [YamlMember(Alias = "axisPoint")]
+        public double[] AxisPoint { get; set; } = { 0, 0, 0 };
+
+        [YamlMember(Alias = "axisDir")]
+        public double[] AxisDir { get; set; } = { 0, 0, 1 };
+    }
+
+    /// <summary>
+    /// A mirror payload. Mirrors MirrorData. The plane's geometry is Origin + Normal; the
+    /// plane key is an identity label (NX has no Oblikovati lineage key to supply).
+    /// </summary>
+    public sealed class MirrorData
+    {
+        [YamlMember(Alias = "source")]
+        public IList<int> Source { get; } = new List<int>();
+
+        [YamlMember(Alias = "plane")]
+        public string Plane { get; set; } = string.Empty;
+
+        [YamlMember(Alias = "origin")]
+        public double[] Origin { get; set; } = { 0, 0, 0 };
+
+        [YamlMember(Alias = "normal")]
+        public double[] Normal { get; set; } = { 1, 0, 0 };
     }
 }

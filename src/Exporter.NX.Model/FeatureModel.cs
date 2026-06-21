@@ -65,4 +65,47 @@ namespace Oblikovati.Exporter.NX.Model
         /// <summary>Swept angle in degrees; 0 means a full 360 revolution.</summary>
         public double AngleDegrees { get; set; }
     }
+
+    /// <summary>
+    /// Base of features that replicate earlier features. <see cref="SourceFeatureIndices"/>
+    /// are indices into <see cref="NxDocument.Features"/> (resolved to program indices on
+    /// translation); they must refer to earlier, translatable features.
+    /// </summary>
+    public abstract class NxReplicatingFeature : NxFeature
+    {
+        public System.Collections.Generic.IList<int> SourceFeatureIndices { get; } =
+            new System.Collections.Generic.List<int>();
+    }
+
+    /// <summary>A rectangular grid pattern. Step vectors are the offset between adjacent copies (mm).</summary>
+    public sealed class NxRectangularPattern : NxReplicatingFeature
+    {
+        public int CountX { get; set; } = 1;
+
+        public int CountY { get; set; } = 1;
+
+        public double[] StepX { get; set; } = { 0, 0, 0 };
+
+        public double[] StepY { get; set; } = { 0, 0, 0 };
+    }
+
+    /// <summary>A circular pattern about an axis. AngleDegrees is the total spread (0 = full 360).</summary>
+    public sealed class NxCircularPattern : NxReplicatingFeature
+    {
+        public int Count { get; set; } = 1;
+
+        public double AngleDegrees { get; set; }
+
+        public double[] AxisPoint { get; set; } = { 0, 0, 0 };
+
+        public double[] AxisDir { get; set; } = { 0, 0, 1 };
+    }
+
+    /// <summary>A mirror across a plane given by its origin (mm) and unit normal.</summary>
+    public sealed class NxMirror : NxReplicatingFeature
+    {
+        public double[] PlaneOrigin { get; set; } = { 0, 0, 0 };
+
+        public double[] PlaneNormal { get; set; } = { 1, 0, 0 };
+    }
 }
