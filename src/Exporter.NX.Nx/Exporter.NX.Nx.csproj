@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The NXOpen adapter: NXOpen -> NX-neutral IR. The ONLY project that touches
+       NXOpen. By default it links the compile-only NXOpen stub so CI builds without
+       a licensed NX install. For a real release build, pass -p:UseNxStubs=false and
+       -p:NxOpenDir=<path to UGOPEN managed assemblies> to link the genuine DLLs. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.NX.Nx</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.NX.Nx</AssemblyName>
+    <UseNxStubs Condition="'$(UseNxStubs)' == ''">true</UseNxStubs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Exporter.NX.Model\Exporter.NX.Model.csproj" />
+  </ItemGroup>
+
+  <!-- CI / dev: compile against the stub facade. -->
+  <ItemGroup Condition="'$(UseNxStubs)' == 'true'">
+    <ProjectReference Include="..\..\stubs\NXOpen.Stubs\NXOpen.Stubs.csproj" />
+  </ItemGroup>
+
+  <!-- Release: link the genuine Siemens managed assemblies. -->
+  <ItemGroup Condition="'$(UseNxStubs)' == 'false'">
+    <Reference Include="NXOpen">
+      <HintPath>$(NxOpenDir)\NXOpen.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

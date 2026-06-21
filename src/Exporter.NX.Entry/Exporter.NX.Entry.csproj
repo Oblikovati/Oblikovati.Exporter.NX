@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The loadable plugin assembly: wires the NXOpen adapter to the translator and
+       writer, and exposes the entry point NX calls from the ribbon. Library (not exe)
+       so NX can load it from its startup folder. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.NX.Entry</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.NX</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Exporter.NX.Model\Exporter.NX.Model.csproj" />
+    <ProjectReference Include="..\Exporter.NX.Recipe\Exporter.NX.Recipe.csproj" />
+    <ProjectReference Include="..\Exporter.NX.Translate\Exporter.NX.Translate.csproj" />
+    <ProjectReference Include="..\Exporter.NX.Nx\Exporter.NX.Nx.csproj" />
+  </ItemGroup>
+
+</Project>

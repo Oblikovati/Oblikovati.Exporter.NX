@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Compile-only facade of the NXOpen subset the adapter calls, so CI can build
+       Exporter.NX.Nx without a licensed NX install. The assembly is named "NXOpen"
+       so `using NXOpen;` resolves identically against this stub or the real
+       Siemens NXOpen.dll. The real release build references the genuine assembly
+       instead (see Exporter.NX.Nx.csproj, UseNxStubs=false). Members throw at
+       runtime by design: nothing here ever runs outside a real NX session. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>NXOpen</AssemblyName>
+    <RootNamespace>NXOpen</RootNamespace>
+  </PropertyGroup>
+
+</Project>
