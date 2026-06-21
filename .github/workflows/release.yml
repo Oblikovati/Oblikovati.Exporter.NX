@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Builds the installable release zip and attaches it to the GitHub Release for a tag.
+#
+# The real plugin must link the genuine Siemens NXOpen assemblies (the CI build in
+# build.yml links a compile-only stub and cannot produce a loadable plugin). So this
+# job runs on a SELF-HOSTED runner that has NX installed and is labelled `nx`; set the
+# NX_OPEN_DIR repo/environment variable to the directory holding the managed NXOpen
+# assemblies (…\NXBIN\managed or …\UGOPEN\NET). build.yml remains the correctness gate.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  package:
+    runs-on: [self-hosted, nx]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish plugin against the real NXOpen assemblies
+        shell: bash
+        run: |
+          dotnet publish src/Exporter.NX.Entry -c Release \
+            -p:UseNxStubs=false -p:NxOpenDir="${NX_OPEN_DIR}" -o publish
+        env:
+          NX_OPEN_DIR: ${{ vars.NX_OPEN_DIR }}
+      - name: Package the UGII_USER_DIR release zip
+        shell: bash
+        run: scripts/package.sh publish "${GITHUB_REF_NAME}" "Oblikovati.Exporter.NX-${GITHUB_REF_NAME}.zip"
+      - name: Attach the zip to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: gh release upload "${GITHUB_REF_NAME}" "Oblikovati.Exporter.NX-${GITHUB_REF_NAME}.zip" --clobber

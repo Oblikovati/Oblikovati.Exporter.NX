@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Oblikovati recipe POCOs + the YAML emitter. Pure, no NXOpen dependency.
+       YamlDotNet is wrapped behind IRecipeWriter (CLAUDE.md: thin interface over
+       third-party libs) so callers never see YamlDotNet types. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.NX.Recipe</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.NX.Recipe</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+</Project>

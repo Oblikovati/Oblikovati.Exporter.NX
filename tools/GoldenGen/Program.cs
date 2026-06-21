@@ -1,0 +1,61 @@
+// SPDX-License-Identifier: GPL-2.0-only
+using System;
+using System.Collections.Generic;
+using System.IO;
+using Oblikovati.Exporter.NX.Fixtures;
+using Oblikovati.Exporter.NX.Model;
+using Oblikovati.Exporter.NX.Recipe;
+using Oblikovati.Exporter.NX.Translate;
+
+namespace Oblikovati.Exporter.NX.GoldenGen
+{
+    /// <summary>
+    /// Writes golden documents to the directory given as the first argument. Fixtures are
+    /// the shared <see cref="NxSampleParts"/> so CI Job 2 opens the exact inputs the unit
+    /// tests assert, with the real oblikovati-cli. Each fixture goes through the full
+    /// document exporter, so an assembly fixture emits its .oad plus its component files.
+    /// </summary>
+    internal static class Program
+    {
+        private static int Main(string[] args)
+        {
+            if (args.Length != 1)
+            {
+                Console.Error.WriteLine("usage: GoldenGen <output-dir>");
+                return 2;
+            }
+
+            string outDir = args[0];
+            Directory.CreateDirectory(outDir);
+
+            var exporter = new DocumentExporter(new DocumentTranslator());
+            var writer = new RecipeYamlWriter();
+            foreach (NxDocument fixture in Fixtures())
+            {
+                foreach (TranslatedDocument doc in exporter.Export(fixture, new ExportReport()))
+                {
+                    string path = Path.Combine(outDir, doc.FileName);
+                    File.WriteAllText(path, writer.Write(doc.Document));
+                    Console.WriteLine("wrote " + path);
+                }
+            }
+
+            return 0;
+        }
+
+        private static IEnumerable<NxDocument> Fixtures()
+        {
+            yield return NxSampleParts.EmptyPart();
+            yield return NxSampleParts.ParametricPart();
+            yield return NxSampleParts.RectanglePart();
+            yield return NxSampleParts.CirclePart();
+            yield return NxSampleParts.BoxPart();
+            yield return NxSampleParts.RevolvePart();
+            yield return NxSampleParts.DatumPlanePart();
+            yield return NxSampleParts.RectPatternPart();
+            yield return NxSampleParts.MirrorPart();
+            yield return NxSampleParts.CircularPatternPart();
+            yield return NxSampleParts.AssemblyDoc();
+        }
+    }
+}

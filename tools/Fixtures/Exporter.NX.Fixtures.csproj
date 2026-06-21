@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Sample NX-neutral documents shared by GoldenGen (CI round-trip) and the test
+       suite, so the same fixtures are unit-asserted and opened by oblikovati-cli. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.NX.Fixtures</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.NX.Fixtures</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Exporter.NX.Model\Exporter.NX.Model.csproj" />
+  </ItemGroup>
+
+</Project>

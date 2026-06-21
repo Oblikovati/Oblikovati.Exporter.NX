@@ -1,0 +1,12 @@
+! Oblikovati exporter menu. NX reads this from <UGII_USER_DIR>/startup at launch and
+! adds an "Export to Oblikovati" item that runs the managed entry point in
+! Oblikovati.Exporter.NX.dll. The ribbon placement and icon are finalized in M7.
+VERSION 120
+
+EDIT UG_GATEWAY_MAIN_MENUBAR
+
+AFTER UG_FILE_EXPORT
+BUTTON OBLIKOVATI_EXPORT
+LABEL Export to Oblikovati...
+ACTIONS Oblikovati.Exporter.NX.dll
+END_OF_AFTER

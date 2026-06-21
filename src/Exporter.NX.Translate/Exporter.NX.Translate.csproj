@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The translation core: NX-neutral IR -> Oblikovati recipe. Pure, no NXOpen.
+       This is where the feature-mapping registry lives and where most tests run. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Oblikovati.Exporter.NX.Translate</RootNamespace>
+    <AssemblyName>Oblikovati.Exporter.NX.Translate</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Exporter.NX.Model\Exporter.NX.Model.csproj" />
+    <ProjectReference Include="..\Exporter.NX.Recipe\Exporter.NX.Recipe.csproj" />
+  </ItemGroup>
+
+</Project>
