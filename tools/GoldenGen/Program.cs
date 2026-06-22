@@ -56,6 +56,10 @@ namespace Oblikovati.Exporter.NX.GoldenGen
             yield return NxSampleParts.MirrorPart();
             yield return NxSampleParts.CircularPatternPart();
             yield return NxSampleParts.AssemblyDoc();
+            yield return NxSampleParts.FilletedBoxPart();
+            yield return NxSampleParts.ChamferedBoxPart();
+            yield return NxSampleParts.ShelledBoxPart();
+            yield return NxSampleParts.HoledBoxPart();
         }
     }
 }
