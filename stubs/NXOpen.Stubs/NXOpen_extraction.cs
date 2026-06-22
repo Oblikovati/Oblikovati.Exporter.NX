@@ -120,5 +120,17 @@ namespace NXOpen.Features
 
         public virtual ShellBuilder CreateShellBuilder(Feature feature) =>
             throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual ExtrudeBuilder CreateExtrudeBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual RevolveBuilder CreateRevolveBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual DraftBuilder CreateDraftBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual HolePackageBuilder CreateHolePackageBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
     }
 }
