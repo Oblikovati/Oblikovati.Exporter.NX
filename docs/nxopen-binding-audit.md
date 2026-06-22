@@ -51,7 +51,18 @@ follow-up can use the genuine frame instead.
 
 ## To finish verification
 
-Build the adapter against the real assemblies — `dotnet build -p:UseNxStubs=false
--p:NxOpenDir=<…/NXBIN/managed or UGOPEN/NET>` — on a machine with NX (or the NXOpen reference
-assemblies). The compiler then flags every remaining mismatch; fix the builders to their real
-(chainset-style) APIs and re-run the fake-scene dry run.
+Build the adapter against the real assemblies — `dotnet build src/Exporter.NX.Entry
+-p:UseNxStubs=false -p:NxOpenDir=<…/NXBIN/managed or UGOPEN/NET>` — on a machine with NX (or
+the NXOpen reference assemblies). The compiler then flags every remaining mismatch; fix the
+builders to their real (chainset-style) APIs and re-run the fake-scene dry run. (Build only
+`Exporter.NX.Entry`, not the whole solution: the test project links the stub `NXOpen`, which
+would clash with the real `NXOpen.dll` on the assembly name.)
+
+### Wired into CI
+
+The `build` workflow has a **`binding-check`** job that runs exactly this command. It is
+gated on the `NX_OPEN_DIR` repository variable (`if: vars.NX_OPEN_DIR != ''`) and targets a
+self-hosted runner labelled `nx`, so it stays **skipped** on stock PRs until a runner with the
+NXOpen assemblies is registered and the variable is set. Once enabled it compiles the adapter
+against the genuine `NXOpen` / `NXOpen.Utilities` / `NXOpen.UF` assemblies on every push,
+turning the remaining ⚠️ rows above into hard compile errors the moment a binding diverges.

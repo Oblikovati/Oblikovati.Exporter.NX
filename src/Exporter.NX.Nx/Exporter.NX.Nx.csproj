@@ -20,10 +20,21 @@
     <ProjectReference Include="..\..\stubs\NXOpen.Stubs\NXOpen.Stubs.csproj" />
   </ItemGroup>
 
-  <!-- Release: link the genuine Siemens managed assemblies. -->
+  <!-- Release / binding check: link the genuine Siemens managed assemblies from NxOpenDir
+       (e.g. <NX>\NXBIN\managed). The adapter's types span the core, utilities, and UF
+       assemblies, so reference all three; Private=false keeps them out of the output (NX
+       supplies them at runtime). -->
   <ItemGroup Condition="'$(UseNxStubs)' == 'false'">
     <Reference Include="NXOpen">
       <HintPath>$(NxOpenDir)\NXOpen.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="NXOpen.Utilities">
+      <HintPath>$(NxOpenDir)\NXOpen.Utilities.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="NXOpen.UF">
+      <HintPath>$(NxOpenDir)\NXOpen.UF.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
