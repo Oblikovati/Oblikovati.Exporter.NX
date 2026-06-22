@@ -19,21 +19,29 @@ namespace Oblikovati.Exporter.NX.Nx
     {
         private const double CoincidenceTol = 1e-4; // mm, in sketch 2D
 
-        public static void Extract(Part part, NxDocument document)
+        public static void Extract(Part part, NxDocument document, IDictionary<NXObject, int> curveToSketch)
         {
             foreach (Sketch sketch in part.Sketches.ToArray())
             {
-                NxSketch? extracted = ExtractOne(sketch);
-                if (extracted != null)
+                NXObject[] geometry = sketch.GetAllGeometry();
+                NxSketch? extracted = ExtractOne(sketch, geometry);
+                if (extracted == null)
                 {
-                    document.Sketches.Add(extracted);
+                    continue;
+                }
+
+                int index = document.Sketches.Count;
+                document.Sketches.Add(extracted);
+                // Map this sketch's curves so a feature's section resolves to its sketch index.
+                foreach (NXObject obj in geometry)
+                {
+                    curveToSketch[obj] = index;
                 }
             }
         }
 
-        private static NxSketch? ExtractOne(Sketch sketch)
+        private static NxSketch? ExtractOne(Sketch sketch, NXObject[] geometry)
         {
-            NXObject[] geometry = sketch.GetAllGeometry();
             SketchPlaneFrame frame = SketchPlaneMath.Fit(CollectPoints(geometry));
             var result = new NxSketch
             {

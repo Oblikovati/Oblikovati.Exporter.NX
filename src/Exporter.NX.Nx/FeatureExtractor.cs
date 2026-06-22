@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
+using System;
 using System.Collections.Generic;
 using NXOpen;
 using NXOpen.Features;
@@ -9,23 +10,26 @@ namespace Oblikovati.Exporter.NX.Nx
     /// <summary>
     /// Reads a part's feature history into IR features. Dispatches on the NX feature type and
     /// reads each feature through its builder (the documented way to read an existing
-    /// feature): scalar parameters from the feature's expressions, selected geometry from the
-    /// builder's collectors, converted to the geometric descriptors the dress-up features
-    /// carry (ADR-0040). UNVERIFIED — needs a real NX session; the builder member shapes are a
-    /// best-effort match to the NXOpen API.
+    /// feature): scalar parameters from the feature's expressions/builder, selected geometry
+    /// from the builder's collectors → the geometric descriptors the dress-ups carry
+    /// (ADR-0040). A sketch-based feature resolves its section to the IR sketch index via the
+    /// curve→sketch map built during sketch extraction. UNVERIFIED — needs a real NX session;
+    /// builder member shapes are a best-effort match to the NXOpen API.
     ///
-    /// Done here: edge blend (fillet), chamfer, shell. Deferred (documented), because they
-    /// need feature-specific builder APIs and/or sketch cross-referencing only resolvable
-    /// against live NX: extrude/revolve (section → sketch index + limits), hole
-    /// (HolePackageBuilder), draft, and the patterns/mirror families.
+    /// Done: extrude, revolve, fillet, chamfer, shell, draft, hole. Still deferred (need
+    /// feature-specific APIs / live NX): the patterns/mirror families and partial-arc/spline
+    /// sketch geometry. Profile index defaults to 0 (NX section → Oblikovati region index has
+    /// no stable mapping).
     /// </summary>
     public static class FeatureExtractor
     {
-        public static void Extract(Part part, NxDocument document)
+        private const double RadToDeg = 180.0 / Math.PI;
+
+        public static void Extract(Part part, NxDocument document, IReadOnlyDictionary<NXObject, int> curveToSketch)
         {
             foreach (Feature feature in part.Features.ToArray())
             {
-                NxFeature? extracted = ExtractFeature(part, feature);
+                NxFeature? extracted = ExtractFeature(part, feature, document, curveToSketch);
                 if (extracted != null)
                 {
                     document.Features.Add(extracted);
@@ -33,10 +37,16 @@ namespace Oblikovati.Exporter.NX.Nx
             }
         }
 
-        private static NxFeature? ExtractFeature(Part part, Feature feature)
+        private static NxFeature? ExtractFeature(
+            Part part, Feature feature, NxDocument document, IReadOnlyDictionary<NXObject, int> curveToSketch)
         {
             switch (feature.FeatureType)
             {
+                case "EXTRUDE":
+                    return Extrude(part, feature, curveToSketch);
+                case "REVOLVE":
+                case "REVOLVED":
+                    return Revolve(part, feature, document, curveToSketch);
                 case "EDGE BLEND":
                     return Fillet(part, feature);
                 case "CHAMFER":
@@ -44,9 +54,133 @@ namespace Oblikovati.Exporter.NX.Nx
                 case "HOLLOW":
                 case "SHELL":
                     return Shell(part, feature);
+                case "DRAFT":
+                    return Draft(part, feature);
+                case "SIMPLE HOLE":
+                case "HOLE PACKAGE":
+                case "HOLE":
+                    return Hole(part, feature);
                 default:
-                    return null; // extrude/revolve/hole/draft/pattern: live-NX completion
+                    return null; // patterns/mirror & exotic geometry: live-NX completion
             }
+        }
+
+        private static NxFeature? Extrude(Part part, Feature feature, IReadOnlyDictionary<NXObject, int> curveToSketch)
+        {
+            ExtrudeBuilder builder = part.Features.CreateExtrudeBuilder(feature);
+            try
+            {
+                int sketch = SketchIndexOf(builder.Section, curveToSketch);
+                if (sketch < 0)
+                {
+                    return null; // section did not resolve to an extracted sketch
+                }
+
+                double start = builder.Limits.StartExtend.Value.Value;
+                double end = builder.Limits.EndExtend.Value.Value;
+                return new NxExtrude
+                {
+                    Name = feature.Name,
+                    SketchIndex = sketch,
+                    ProfileIndex = 0,
+                    Operation = NxOperation.NewBody,
+                    Distance = end,
+                    SecondDistance = start != 0 ? Math.Abs(start) : 0,
+                    Direction = start != 0 ? NxExtentDirection.Symmetric : NxExtentDirection.Positive,
+                };
+            }
+            finally
+            {
+                builder.Destroy();
+            }
+        }
+
+        private static NxFeature? Revolve(
+            Part part, Feature feature, NxDocument document, IReadOnlyDictionary<NXObject, int> curveToSketch)
+        {
+            RevolveBuilder builder = part.Features.CreateRevolveBuilder(feature);
+            try
+            {
+                int sketch = SketchIndexOf(builder.Section, curveToSketch);
+                if (sketch < 0)
+                {
+                    return null;
+                }
+
+                double angle = builder.Limits.EndExtend.Value.Value - builder.Limits.StartExtend.Value.Value;
+                CenterlineInjector.Inject(document.Sketches[sketch], builder.Axis);
+                return new NxRevolve
+                {
+                    Name = feature.Name,
+                    SketchIndex = sketch,
+                    ProfileIndex = 0,
+                    Operation = NxOperation.NewBody,
+                    AngleDegrees = Math.Abs(angle - 2 * Math.PI) < 1e-6 ? 0 : angle * RadToDeg,
+                };
+            }
+            finally
+            {
+                builder.Destroy();
+            }
+        }
+
+        private static NxDraft Draft(Part part, Feature feature)
+        {
+            DraftBuilder builder = part.Features.CreateDraftBuilder(feature);
+            try
+            {
+                Vector3d pull = builder.PullDirection;
+                var draft = new NxDraft
+                {
+                    Name = feature.Name,
+                    AngleDegrees = FirstValue(feature) * RadToDeg,
+                    Pull = new[] { pull.X, pull.Y, pull.Z },
+                };
+                foreach (Face face in FacesOf(builder.FaceCollector))
+                {
+                    draft.Faces.Add(NxFaceGeometry.Describe(face));
+                }
+
+                return draft;
+            }
+            finally
+            {
+                builder.Destroy();
+            }
+        }
+
+        private static NxHole Hole(Part part, Feature feature)
+        {
+            HolePackageBuilder builder = part.Features.CreateHolePackageBuilder(feature);
+            try
+            {
+                return new NxHole
+                {
+                    Name = feature.Name,
+                    PlacementFace = NxFaceGeometry.Describe(builder.PlacementFace),
+                    DiameterMm = builder.Diameter.Value,
+                    DepthMm = builder.Depth.Value,
+                    ThroughAll = builder.ThroughAll,
+                };
+            }
+            finally
+            {
+                builder.Destroy();
+            }
+        }
+
+        // The IR sketch index of the first section curve that belongs to an extracted sketch.
+        private static int SketchIndexOf(Section section, IReadOnlyDictionary<NXObject, int> curveToSketch)
+        {
+            foreach (NXObject curve in section.GetOutputCurves())
+            {
+                if (curveToSketch.TryGetValue(curve, out int index))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         private static NxFillet Fillet(Part part, Feature feature)

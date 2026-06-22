@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 using System;
+using System.Collections.Generic;
 using System.IO;
 using NXOpen;
 using NXOpen.Assemblies;
@@ -54,8 +55,10 @@ namespace Oblikovati.Exporter.NX.Nx
                 AngleUnit = "deg",
             };
             ExpressionExtractor.Extract(part, document);
-            SketchExtractor.Extract(part, document);
-            FeatureExtractor.Extract(part, document);
+            // The map lets a sketch-based feature resolve its section to the IR sketch index.
+            var curveToSketch = new Dictionary<NXObject, int>(ReferenceEquality<NXObject>.Default);
+            SketchExtractor.Extract(part, document, curveToSketch);
+            FeatureExtractor.Extract(part, document, curveToSketch);
             return document;
         }
 
