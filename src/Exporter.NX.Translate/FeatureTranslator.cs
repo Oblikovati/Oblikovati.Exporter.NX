@@ -42,6 +42,16 @@ namespace Oblikovati.Exporter.NX.Translate
                     return TranslateCircPattern(circ, sourceIndex);
                 case NxMirror mirror:
                     return TranslateMirror(mirror, sourceIndex);
+                case NxFillet fillet:
+                    return DressUpTranslator.Fillet(fillet);
+                case NxChamfer chamfer:
+                    return DressUpTranslator.Chamfer(chamfer);
+                case NxShell shell:
+                    return DressUpTranslator.Shell(shell);
+                case NxDraft draft:
+                    return DressUpTranslator.Draft(draft);
+                case NxHole hole:
+                    return DressUpTranslator.Hole(hole);
                 default:
                     _report.Unsupported("feature", feature.GetType().Name);
                     return null;

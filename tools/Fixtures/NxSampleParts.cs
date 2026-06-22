@@ -213,6 +213,69 @@ namespace Oblikovati.Exporter.NX.Fixtures
             return part;
         }
 
+        /// <summary>The 60 cm^3 box with a 5 mm fillet on a top edge (geometric ref, ADR-0040).</summary>
+        public static NxDocument FilletedBoxPart()
+        {
+            NxDocument part = MakeBox("filleted-box-part", 0);
+            var fillet = new NxFillet { Name = "Fillet1", RadiusMm = 5 };
+            // The top edge at y=0, z=50 mm: from (0,0,50) to (40,0,50) — midpoint (20,0,50).
+            fillet.Edges.Add(new NxEdgeDescriptor
+            {
+                Midpoint = new double[] { 20, 0, 50 },
+                Direction = new double[] { 1, 0, 0 },
+            });
+            part.Features.Add(fillet);
+            return part;
+        }
+
+        /// <summary>The 60 cm^3 box with a 5 mm chamfer on a top edge (geometric ref).</summary>
+        public static NxDocument ChamferedBoxPart()
+        {
+            NxDocument part = MakeBox("chamfered-box-part", 0);
+            var chamfer = new NxChamfer { Name = "Chamfer1", DistanceMm = 5 };
+            chamfer.Edges.Add(new NxEdgeDescriptor
+            {
+                Midpoint = new double[] { 20, 0, 50 },
+                Direction = new double[] { 1, 0, 0 },
+            });
+            part.Features.Add(chamfer);
+            return part;
+        }
+
+        /// <summary>The box shelled to a 5 mm wall, removing the top face (geometric ref).</summary>
+        public static NxDocument ShelledBoxPart()
+        {
+            NxDocument part = MakeBox("shelled-box-part", 0);
+            var shell = new NxShell { Name = "Shell1", ThicknessMm = 5 };
+            shell.RemovedFaces.Add(new NxFaceDescriptor
+            {
+                Centroid = new double[] { 20, 15, 50 },
+                Normal = new double[] { 0, 0, 1 },
+            });
+            part.Features.Add(shell);
+            return part;
+        }
+
+        /// <summary>The 60 cm^3 box with a 10 mm drilled hole 20 mm deep into its top face.</summary>
+        public static NxDocument HoledBoxPart()
+        {
+            NxDocument part = MakeBox("holed-box-part", 0);
+            var hole = new NxHole
+            {
+                Name = "Hole1",
+                DiameterMm = 10,
+                DepthMm = 20,
+                PlacementFace = new NxFaceDescriptor
+                {
+                    // The top face: centroid (20,15,50) mm, outward normal +Z.
+                    Centroid = new double[] { 20, 15, 50 },
+                    Normal = new double[] { 0, 0, 1 },
+                },
+            };
+            part.Features.Add(hole);
+            return part;
+        }
+
         /// <summary>
         /// A fully-constrained 40x30 mm rectangle whose lower-left corner sits at
         /// (x0, 0) mm, extruded 50 mm. The shared builder behind the pattern/mirror boxes.
