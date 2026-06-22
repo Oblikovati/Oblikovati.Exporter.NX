@@ -150,8 +150,21 @@ namespace Oblikovati.Exporter.NX.Tests
     internal sealed class FakeEdgeBlendBuilder : EdgeBlendBuilder
     {
         private readonly ScCollector _edges;
-        public FakeEdgeBlendBuilder(ScCollector edges) => _edges = edges;
-        public override ScCollector Edges => _edges;
+        private readonly Expression _radius;
+        public FakeEdgeBlendBuilder(ScCollector edges, double radiusMm)
+        {
+            _edges = edges;
+            _radius = new FakeExpression("blend_radius", radiusMm.ToString(System.Globalization.CultureInfo.InvariantCulture), "Number", radiusMm, null);
+        }
+
+        public override int GetNumberOfValidChainsets() => 1;
+
+        public override void GetChainset(int index, out ScCollector collector, out Expression radius)
+        {
+            collector = _edges;
+            radius = _radius;
+        }
+
         public override void Destroy() { }
     }
 
@@ -258,14 +271,12 @@ namespace Oblikovati.Exporter.NX.Tests
                 Builder = new FakeExtrudeBuilder(new FakeSection(rectangle), new FakeLimits(0, 50)),
             };
 
-            // Fillet a top edge (0,0,50)-(40,0,50) at radius 5 mm.
-            var fillet = new FakeFeature("EDGE BLEND(2)", "EDGE BLEND",
-                new Expression[] { new FakeExpression("radius", "5", "Number", 5, mm, owner: null) })
+            // Fillet a top edge (0,0,50)-(40,0,50) at radius 5 mm (one chainset).
+            var fillet = new FakeFeature("EDGE BLEND(2)", "EDGE BLEND")
             {
-                Builder = new FakeEdgeBlendBuilder(new FakeScCollector(new NXObject[]
-                {
-                    new FakeEdge(P(0, 0, 50), P(40, 0, 50)),
-                })),
+                Builder = new FakeEdgeBlendBuilder(
+                    new FakeScCollector(new NXObject[] { new FakeEdge(P(0, 0, 50), P(40, 0, 50)) }),
+                    radiusMm: 5),
             };
 
             var features = new FakeFeatureCollection(new NXOpen.Features.Feature[] { extrude, fillet });

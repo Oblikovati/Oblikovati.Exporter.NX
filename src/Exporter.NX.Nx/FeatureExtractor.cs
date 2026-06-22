@@ -308,10 +308,23 @@ namespace Oblikovati.Exporter.NX.Nx
             EdgeBlendBuilder builder = part.Features.CreateEdgeBlendBuilder(feature);
             try
             {
-                var fillet = new NxFillet { Name = feature.Name, RadiusMm = FirstValue(feature) };
-                foreach (Edge edge in EdgesOf(builder.Edges))
+                // Edge blends store edges in chainsets, each with its own radius Expression
+                // (verified against the NXOpen .NET reference). The IR fillet carries one
+                // radius, so take the first chainset's; gather every chainset's edges.
+                var fillet = new NxFillet { Name = feature.Name };
+                int chainsets = builder.GetNumberOfValidChainsets();
+                for (int i = 0; i < chainsets; i++)
                 {
-                    fillet.Edges.Add(NxEdgeGeometry.Describe(edge));
+                    builder.GetChainset(i, out ScCollector edges, out Expression radius);
+                    if (i == 0)
+                    {
+                        fillet.RadiusMm = radius.Value;
+                    }
+
+                    foreach (Edge edge in EdgesOf(edges))
+                    {
+                        fillet.Edges.Add(NxEdgeGeometry.Describe(edge));
+                    }
                 }
 
                 return fillet;
