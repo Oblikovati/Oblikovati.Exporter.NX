@@ -30,6 +30,15 @@ namespace NXOpen
         public virtual string FullPath => throw StubError();
 
         public virtual PartUnits PartUnits => throw StubError();
+
+        /// <summary>The part's expressions (parameters + feature-internal values).</summary>
+        public virtual ExpressionCollection Expressions => throw StubError();
+
+        /// <summary>The part's solid/sheet bodies.</summary>
+        public virtual BodyCollection Bodies => throw StubError();
+
+        /// <summary>The part's feature history.</summary>
+        public virtual Features.FeatureCollection Features => throw StubError();
     }
 
     /// <summary>Stub of NXOpen.ListingWindow (the NX text output window).</summary>
