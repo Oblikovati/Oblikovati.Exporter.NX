@@ -56,3 +56,23 @@ jobs:
           go build -o "$RUNNER_TEMP/oblikovati-cli" ./cmd/oblikovati-cli
       - name: Round-trip golden documents
         run: scripts/roundtrip.sh "$RUNNER_TEMP/oblikovati-cli"
+
+  # Job 3 — binding check (opt-in). Compiles the NXOpen adapter against the REAL Siemens
+  # assemblies (-p:UseNxStubs=false) so the compiler flags any facade member that does not
+  # match the genuine NXOpen API — the verification the facade stub can't give. It runs only
+  # when the NX_OPEN_DIR repository variable is set (a self-hosted runner labelled `nx` with
+  # NX installed, or one carrying the NXOpen reference assemblies); otherwise it is skipped,
+  # so it never blocks PRs until the assemblies are available. Build only the adapter chain
+  # (Entry pulls Nx): the test project links the stub, so a whole-solution real build would
+  # clash on the "NXOpen" assembly name.
+  binding-check:
+    if: ${{ vars.NX_OPEN_DIR != '' }}
+    runs-on: [self-hosted, nx]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build adapter against the real NXOpen assemblies
+        shell: bash
+        run: dotnet build src/Exporter.NX.Entry -c Release -p:UseNxStubs=false -p:NxOpenDir="${{ vars.NX_OPEN_DIR }}"
