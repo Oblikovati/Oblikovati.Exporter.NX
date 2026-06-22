@@ -45,11 +45,19 @@ namespace NXOpen.Features
             "NXOpen stub member invoked: this assembly is compile-only; run inside NX with the real NXOpen.dll");
     }
 
-    /// <summary>Stub of the edge-blend (fillet) builder.</summary>
+    /// <summary>
+    /// Stub of the edge-blend (fillet) builder. Verified against the NXOpen .NET reference:
+    /// blended edges are organised into CHAINSETS — each chainset pairs an ScCollector of
+    /// edges with its radius Expression — read via GetNumberOfValidChainsets / GetChainset
+    /// (not a flat .Edges collector).
+    /// </summary>
     public class EdgeBlendBuilder : FeatureBuilder
     {
-        public virtual ScCollector Edges =>
-            throw new System.InvalidOperationException("NXOpen stub: run inside NX");
+        public virtual int GetNumberOfValidChainsets() =>
+            throw new System.InvalidOperationException(ScCollector.StubMessage);
+
+        public virtual void GetChainset(int index, out ScCollector collector, out Expression radius) =>
+            throw new System.InvalidOperationException(ScCollector.StubMessage);
     }
 
     /// <summary>Stub of the chamfer builder.</summary>
