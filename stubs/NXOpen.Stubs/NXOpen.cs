@@ -37,8 +37,14 @@ namespace NXOpen
         /// <summary>The part's solid/sheet bodies.</summary>
         public virtual BodyCollection Bodies => throw StubError();
 
+        /// <summary>The part's sketches.</summary>
+        public virtual SketchCollection Sketches => throw StubError();
+
         /// <summary>The part's feature history.</summary>
         public virtual Features.FeatureCollection Features => throw StubError();
+
+        /// <summary>The part's component structure (its root component when it is an assembly).</summary>
+        public virtual Assemblies.ComponentAssembly ComponentAssembly => throw StubError();
     }
 
     /// <summary>Stub of NXOpen.ListingWindow (the NX text output window).</summary>

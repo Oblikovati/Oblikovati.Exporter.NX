@@ -33,6 +33,9 @@ namespace NXOpen
         /// <summary>The right-hand side of the equation (e.g. "40" or "width*2").</summary>
         public virtual string RightHandSide => throw StubError();
 
+        /// <summary>The evaluated value in base units (mm for a metric part length).</summary>
+        public virtual double Value => throw StubError();
+
         /// <summary>"Number", "String", "Boolean", "Integer", "Vector", "Point", "List".</summary>
         public virtual string Type => throw StubError();
 
@@ -63,6 +66,9 @@ namespace NXOpen
     public class Face : NXObject
     {
         public virtual Tag Tag => throw StubError();
+
+        /// <summary>The face's bounding edges (in no guaranteed order).</summary>
+        public virtual Edge[] GetEdges() => throw StubError();
     }
 
     /// <summary>Stub of NXOpen.Body.</summary>
@@ -95,12 +101,24 @@ namespace NXOpen.Features
     {
         /// <summary>The feature's type name, e.g. "EXTRUDE", "SIMPLE HOLE", "EDGE BLEND".</summary>
         public virtual string FeatureType => throw StubError();
+
+        /// <summary>The feature's parameter expressions (e.g. a blend's radius).</summary>
+        public virtual Expression[] GetExpressions() => throw StubError();
     }
 
     /// <summary>Stub of NXOpen.Features.FeatureCollection.</summary>
     public class FeatureCollection
     {
         public virtual Feature[] ToArray() =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual EdgeBlendBuilder CreateEdgeBlendBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual ChamferBuilder CreateChamferBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual ShellBuilder CreateShellBuilder(Feature feature) =>
             throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
     }
 }
