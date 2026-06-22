@@ -116,6 +116,46 @@ namespace NXOpen.Features
             throw new System.InvalidOperationException(ScCollector.StubMessage);
     }
 
+    /// <summary>
+    /// Stub of the pattern-feature builder, flattened to the inputs the extractor reads (the
+    /// real PatternService layout API is far richer). LayoutType is "Linear" or "Circular".
+    /// </summary>
+    public class PatternFeatureBuilder : FeatureBuilder
+    {
+        public virtual Feature[] GetSourceFeatures() =>
+            throw new System.InvalidOperationException(ScCollector.StubMessage);
+
+        public virtual string LayoutType =>
+            throw new System.InvalidOperationException(ScCollector.StubMessage);
+
+        // Linear layout.
+        public virtual int XCount => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual int YCount => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual Vector3d XDirection => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual Vector3d YDirection => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual double XPitch => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual double YPitch => throw new System.InvalidOperationException(ScCollector.StubMessage);
+
+        // Circular layout.
+        public virtual int CircularCount => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual double CircularAngle => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual Point3d AxisPoint => throw new System.InvalidOperationException(ScCollector.StubMessage);
+        public virtual Vector3d AxisDirection => throw new System.InvalidOperationException(ScCollector.StubMessage);
+    }
+
+    /// <summary>Stub of the mirror-feature builder, flattened to the extractor's inputs.</summary>
+    public class MirrorBuilder : FeatureBuilder
+    {
+        public virtual Feature[] GetSourceFeatures() =>
+            throw new System.InvalidOperationException(ScCollector.StubMessage);
+
+        public virtual Point3d PlaneOrigin =>
+            throw new System.InvalidOperationException(ScCollector.StubMessage);
+
+        public virtual Vector3d PlaneNormal =>
+            throw new System.InvalidOperationException(ScCollector.StubMessage);
+    }
+
     /// <summary>Stub of the hole (package) builder.</summary>
     public class HolePackageBuilder : FeatureBuilder
     {

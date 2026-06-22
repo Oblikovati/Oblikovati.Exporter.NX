@@ -132,5 +132,11 @@ namespace NXOpen.Features
 
         public virtual HolePackageBuilder CreateHolePackageBuilder(Feature feature) =>
             throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual PatternFeatureBuilder CreatePatternFeatureBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
+
+        public virtual MirrorBuilder CreateMirrorBuilder(Feature feature) =>
+            throw new System.InvalidOperationException(ExpressionCollection.StubMessage);
     }
 }
