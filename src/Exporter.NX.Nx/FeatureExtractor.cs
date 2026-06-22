@@ -27,18 +27,26 @@ namespace Oblikovati.Exporter.NX.Nx
 
         public static void Extract(Part part, NxDocument document, IReadOnlyDictionary<NXObject, int> curveToSketch)
         {
+            // Map each NX feature to its IR index as it is added, so a pattern/mirror can
+            // resolve the source features it replicates (which always come earlier).
+            var featureToIndex = new Dictionary<Feature, int>(ReferenceEquality<Feature>.Default);
             foreach (Feature feature in part.Features.ToArray())
             {
-                NxFeature? extracted = ExtractFeature(part, feature, document, curveToSketch);
+                NxFeature? extracted = ExtractFeature(part, feature, document, curveToSketch, featureToIndex);
                 if (extracted != null)
                 {
+                    featureToIndex[feature] = document.Features.Count;
                     document.Features.Add(extracted);
                 }
             }
         }
 
         private static NxFeature? ExtractFeature(
-            Part part, Feature feature, NxDocument document, IReadOnlyDictionary<NXObject, int> curveToSketch)
+            Part part,
+            Feature feature,
+            NxDocument document,
+            IReadOnlyDictionary<NXObject, int> curveToSketch,
+            IReadOnlyDictionary<Feature, int> featureToIndex)
         {
             switch (feature.FeatureType)
             {
@@ -60,8 +68,120 @@ namespace Oblikovati.Exporter.NX.Nx
                 case "HOLE PACKAGE":
                 case "HOLE":
                     return Hole(part, feature);
+                case "PATTERN FEATURE":
+                    return Pattern(part, feature, featureToIndex);
+                case "MIRROR FEATURE":
+                case "MIRROR":
+                    return Mirror(part, feature, featureToIndex);
                 default:
-                    return null; // patterns/mirror & exotic geometry: live-NX completion
+                    return null; // exotic geometry / sketch constraints: live-NX completion
+            }
+        }
+
+        private static NxFeature? Pattern(Part part, Feature feature, IReadOnlyDictionary<Feature, int> featureToIndex)
+        {
+            PatternFeatureBuilder builder = part.Features.CreatePatternFeatureBuilder(feature);
+            try
+            {
+                List<int> sources = ResolveSources(builder.GetSourceFeatures(), featureToIndex);
+                if (sources.Count == 0)
+                {
+                    return null; // sources were not extracted — cannot bind the pattern
+                }
+
+                return builder.LayoutType == "Circular"
+                    ? CircularPattern(feature, builder, sources)
+                    : RectangularPattern(feature, builder, sources);
+            }
+            finally
+            {
+                builder.Destroy();
+            }
+        }
+
+        private static NxRectangularPattern RectangularPattern(
+            Feature feature, PatternFeatureBuilder builder, List<int> sources)
+        {
+            var pattern = new NxRectangularPattern
+            {
+                Name = feature.Name,
+                CountX = builder.XCount,
+                CountY = builder.YCount,
+                StepX = Step(builder.XDirection, builder.XPitch),
+                StepY = Step(builder.YDirection, builder.YPitch),
+            };
+            AddAll(pattern.SourceFeatureIndices, sources);
+            return pattern;
+        }
+
+        private static NxCircularPattern CircularPattern(
+            Feature feature, PatternFeatureBuilder builder, List<int> sources)
+        {
+            Point3d axisPoint = builder.AxisPoint;
+            Vector3d axisDir = builder.AxisDirection;
+            var pattern = new NxCircularPattern
+            {
+                Name = feature.Name,
+                Count = builder.CircularCount,
+                AngleDegrees = builder.CircularAngle * RadToDeg,
+                AxisPoint = new[] { axisPoint.X, axisPoint.Y, axisPoint.Z },
+                AxisDir = new[] { axisDir.X, axisDir.Y, axisDir.Z },
+            };
+            AddAll(pattern.SourceFeatureIndices, sources);
+            return pattern;
+        }
+
+        private static NxFeature? Mirror(Part part, Feature feature, IReadOnlyDictionary<Feature, int> featureToIndex)
+        {
+            MirrorBuilder builder = part.Features.CreateMirrorBuilder(feature);
+            try
+            {
+                List<int> sources = ResolveSources(builder.GetSourceFeatures(), featureToIndex);
+                if (sources.Count == 0)
+                {
+                    return null;
+                }
+
+                Point3d o = builder.PlaneOrigin;
+                Vector3d n = builder.PlaneNormal;
+                var mirror = new NxMirror
+                {
+                    Name = feature.Name,
+                    PlaneOrigin = new[] { o.X, o.Y, o.Z },
+                    PlaneNormal = new[] { n.X, n.Y, n.Z },
+                };
+                AddAll(mirror.SourceFeatureIndices, sources);
+                return mirror;
+            }
+            finally
+            {
+                builder.Destroy();
+            }
+        }
+
+        // The IR indices of the patterned/mirrored source features that were extracted.
+        private static List<int> ResolveSources(Feature[] sources, IReadOnlyDictionary<Feature, int> featureToIndex)
+        {
+            var resolved = new List<int>();
+            foreach (Feature source in sources)
+            {
+                if (featureToIndex.TryGetValue(source, out int index))
+                {
+                    resolved.Add(index);
+                }
+            }
+
+            return resolved;
+        }
+
+        private static double[] Step(Vector3d direction, double pitch) =>
+            new[] { direction.X * pitch, direction.Y * pitch, direction.Z * pitch };
+
+        private static void AddAll(IList<int> target, IEnumerable<int> values)
+        {
+            foreach (int v in values)
+            {
+                target.Add(v);
             }
         }
 
