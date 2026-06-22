@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using NXOpen;
+using NXOpen.Assemblies;
 using Oblikovati.Exporter.NX.Model;
 
 namespace Oblikovati.Exporter.NX.Nx
@@ -36,24 +37,47 @@ namespace Oblikovati.Exporter.NX.Nx
                 throw new InvalidOperationException("no work part is open in NX");
             }
 
+            Component? root = work.ComponentAssembly.RootComponent;
+            return root != null && root.GetChildren().Length > 0
+                ? ExtractAssembly(work, root)
+                : ExtractPart(work);
+        }
+
+        // Reads one part into the IR the translator consumes: parameters, sketches, features.
+        private NxDocument ExtractPart(Part part)
+        {
             var document = new NxDocument
             {
-                DisplayName = work.Leaf,
+                DisplayName = part.Leaf,
                 Kind = NxDocumentKind.Part,
-                LengthUnit = work.PartUnits == PartUnits.Inches ? "in" : "mm",
+                LengthUnit = LengthUnitOf(part),
                 AngleUnit = "deg",
             };
-
-            ExpressionExtractor.Extract(work, document);
-            // Remaining extractors (each reads NXOpen and fills the IR the translator already
-            // consumes), in increasing API depth — verified on real NX, not in CI:
-            //   - sketches: Part.Sketches → NxSketch (curves, constraints, dimensions);
-            //   - sketch-based features: Part.Features (EXTRUDE/REVOLVE/…) → NxExtrude/NxRevolve;
-            //   - dress-ups: edge selections via NxEdgeGeometry, face selections via a UF
-            //     AskFaceProps helper, → NxFillet/NxChamfer/NxShell/NxDraft/NxHole;
-            //   - assemblies: ComponentAssembly.RootComponent → NxOccurrence tree.
+            ExpressionExtractor.Extract(part, document);
+            SketchExtractor.Extract(part, document);
+            FeatureExtractor.Extract(part, document);
             return document;
         }
+
+        // Reads an assembly's occurrence tree; each component's prototype extracts as a part.
+        private NxDocument ExtractAssembly(Part part, Component root)
+        {
+            var document = new NxDocument
+            {
+                DisplayName = part.Leaf,
+                Kind = NxDocumentKind.Assembly,
+                LengthUnit = LengthUnitOf(part),
+            };
+            var components = new ComponentExtractor(ExtractPart);
+            foreach (Component child in root.GetChildren())
+            {
+                document.Occurrences.Add(components.Occurrence(child));
+            }
+
+            return document;
+        }
+
+        private static string LengthUnitOf(Part part) => part.PartUnits == PartUnits.Inches ? "in" : "mm";
 
         /// <summary>
         /// The folder to write exported documents into: the work part's directory so a
