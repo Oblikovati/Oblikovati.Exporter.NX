@@ -36,13 +36,23 @@ namespace Oblikovati.Exporter.NX.Nx
                 throw new InvalidOperationException("no work part is open in NX");
             }
 
-            return new NxDocument
+            var document = new NxDocument
             {
                 DisplayName = work.Leaf,
                 Kind = NxDocumentKind.Part,
                 LengthUnit = work.PartUnits == PartUnits.Inches ? "in" : "mm",
                 AngleUnit = "deg",
             };
+
+            ExpressionExtractor.Extract(work, document);
+            // Remaining extractors (each reads NXOpen and fills the IR the translator already
+            // consumes), in increasing API depth — verified on real NX, not in CI:
+            //   - sketches: Part.Sketches → NxSketch (curves, constraints, dimensions);
+            //   - sketch-based features: Part.Features (EXTRUDE/REVOLVE/…) → NxExtrude/NxRevolve;
+            //   - dress-ups: edge selections via NxEdgeGeometry, face selections via a UF
+            //     AskFaceProps helper, → NxFillet/NxChamfer/NxShell/NxDraft/NxHole;
+            //   - assemblies: ComponentAssembly.RootComponent → NxOccurrence tree.
+            return document;
         }
 
         /// <summary>
