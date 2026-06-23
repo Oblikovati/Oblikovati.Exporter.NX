@@ -1,0 +1,151 @@
+schemaVersion: 2
+documentType: 1
+displayName: filleted-box-part
+model:
+  units:
+    length: mm
+    angle: deg
+    area: mm^2
+    volume: mm^3
+    mass: kg
+    time: s
+  parameters:
+  - name: bw
+    kind: user
+    expression: 40 mm
+  - name: bh
+    kind: user
+    expression: 30 mm
+  sketches:
+  - id: 1
+    name: Base
+    plane:
+      origin:
+      - 0
+      - 0
+      - 0
+      xAxis:
+      - 1
+      - 0
+      - 0
+      yAxis:
+      - 0
+      - 1
+      - 0
+    points:
+    - id: 2
+      x: 0
+      y: 0
+    - id: 3
+      x: 4
+      y: 0
+    - id: 4
+      x: 4
+      y: 0
+    - id: 5
+      x: 4
+      y: 3
+    - id: 6
+      x: 4
+      y: 3
+    - id: 7
+      x: 0
+      y: 3
+    - id: 8
+      x: 0
+      y: 3
+    - id: 9
+      x: 0
+      y: 0
+    entities:
+    - id: 10
+      kind: line
+      points:
+      - 2
+      - 3
+    - id: 11
+      kind: line
+      points:
+      - 4
+      - 5
+    - id: 12
+      kind: line
+      points:
+      - 6
+      - 7
+    - id: 13
+      kind: line
+      points:
+      - 8
+      - 9
+    constraints:
+    - kind: coincident
+      points:
+      - 3
+      - 4
+    - kind: coincident
+      points:
+      - 5
+      - 6
+    - kind: coincident
+      points:
+      - 7
+      - 8
+    - kind: coincident
+      points:
+      - 9
+      - 2
+    - kind: horizontal
+      points:
+      - 2
+      - 3
+    - kind: horizontal
+      points:
+      - 6
+      - 7
+    - kind: vertical
+      points:
+      - 4
+      - 5
+    - kind: vertical
+      points:
+      - 8
+      - 9
+    - kind: fix
+      points:
+      - 2
+    dimensions:
+    - kind: distance
+      points:
+      - 2
+      - 3
+      expression: bw
+    - kind: distance
+      points:
+      - 8
+      - 9
+      expression: bh
+  features:
+  - kind: extrude
+    name: Extrude1
+    extrude:
+      sketch: 0
+      profiles:
+      - 0
+      operation: newBody
+      extent: distance
+      direction: positive
+      distance: 5
+  - kind: fillet
+    name: Fillet1
+    fillet:
+      value: 0.5
+      geomEdges:
+      - midpoint:
+        - 2
+        - 0
+        - 5
+        direction:
+        - 1
+        - 0
+        - 0

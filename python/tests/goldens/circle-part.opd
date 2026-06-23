@@ -1,0 +1,50 @@
+schemaVersion: 2
+documentType: 1
+displayName: circle-part
+model:
+  units:
+    length: mm
+    angle: deg
+    area: mm^2
+    volume: mm^3
+    mass: kg
+    time: s
+  parameters:
+  - name: dia
+    kind: user
+    expression: 40 mm
+  sketches:
+  - id: 1
+    name: Circle
+    plane:
+      origin:
+      - 0
+      - 0
+      - 0
+      xAxis:
+      - 1
+      - 0
+      - 0
+      yAxis:
+      - 0
+      - 1
+      - 0
+    points:
+    - id: 2
+      x: 0
+      y: 0
+    entities:
+    - id: 3
+      kind: circle
+      points:
+      - 2
+      radius: 2
+    constraints:
+    - kind: fix
+      points:
+      - 2
+    dimensions:
+    - kind: diameter
+      curves:
+      - 3
+      expression: dia

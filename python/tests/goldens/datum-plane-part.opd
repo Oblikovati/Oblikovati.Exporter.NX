@@ -1,0 +1,26 @@
+schemaVersion: 2
+documentType: 1
+displayName: datum-plane-part
+model:
+  units:
+    length: mm
+    angle: deg
+    area: mm^2
+    volume: mm^3
+    mass: kg
+    time: s
+  workFeatures:
+  - collection: plane
+    kind: fixed-frame
+    position:
+    - 0
+    - 0
+    - 1
+    xaxis:
+    - 1
+    - 0
+    - 0
+    yaxis:
+    - 0
+    - 1
+    - 0

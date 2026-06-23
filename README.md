@@ -68,6 +68,30 @@ In NX the **Export to Oblikovati** menu item runs the plugin, which writes the `
 (or `.oad` + components) next to the source part and shows a summary in the listing
 window.
 
+## Python journal edition (`python/`)
+
+Some NX deployments will not load a shared library that is not digitally signed with a
+Siemens certificate, which is not always obtainable. For those, an **NX Open Python
+journal** edition lives under `python/` and produces the **same** native `.opd`/`.oad`
+output — it is run through NX's journaling mechanism, so no compiled, code-signed DLL is
+needed. See `docs/nxopen-python-scripting.md` for the NX scripting constraints it honours.
+
+It mirrors the C# layering (`recipe` / `model` / `translate` / `nx` / `entry`), is
+dependency-free (NX's embedded CPython has no `pip` packages), and its emitter is verified
+**byte-for-byte** against the C# goldens (`python/tests/goldens/`, the snapshot oracle).
+
+```
+cd python
+python -m pip install -r requirements-dev.txt
+python -m pytest --cov=oblikovati_exporter_nx        # pure core; nx/ adapter excluded
+python tools/goldengen.py out/                        # emit golden .opd/.oad
+../scripts/roundtrip_python.sh <oblikovati-cli>       # open them with the real reader
+```
+
+CI runs the Python suite (`python-core`) and its round-trip (`python-roundtrip`) as
+separate `build.yml` jobs, and `release.yml` attaches a second zip
+(`Oblikovati.Exporter.NX.Python-<ver>.zip`, see `deploy-python/README.md`).
+
 ## License
 
 GPL-2.0-only.

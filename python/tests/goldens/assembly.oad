@@ -1,0 +1,50 @@
+schemaVersion: 2
+documentType: 2
+displayName: assembly
+model:
+  units:
+    length: mm
+    angle: deg
+    area: mm^2
+    volume: mm^3
+    mass: kg
+    time: s
+  occurrences:
+  - name: box-component:1
+    component: box-component.opd
+    transform:
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+  - name: box-component:2
+    component: box-component.opd
+    transform:
+    - 1
+    - 0
+    - 0
+    - 10
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
+    - 0
+    - 0
+    - 0
+    - 0
+    - 1
