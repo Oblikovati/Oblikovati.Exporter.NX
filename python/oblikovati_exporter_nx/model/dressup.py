@@ -8,7 +8,7 @@ Lengths are millimetres (the IR contract).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 from .feature import NxFeature
 
@@ -64,9 +64,14 @@ class NxDraft(NxFeature):
 
 @dataclass
 class NxHole(NxFeature):
-    """A drilled hole on a placement face (geometric descriptor)."""
+    """A drilled hole on a placement face (geometric descriptor).
+
+    ``center`` is the explicit drill point in model space (mm); None means drill at the
+    face centroid (the kernel projects an explicit centre onto the placement face plane).
+    """
 
     placement_face: NxFaceDescriptor = field(default_factory=NxFaceDescriptor)
     diameter_mm: float = 0.0
     depth_mm: float = 0.0
     through_all: bool = False
+    center: Optional[List[float]] = None

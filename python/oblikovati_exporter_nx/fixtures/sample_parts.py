@@ -235,6 +235,21 @@ def holed_box_part() -> NxDocument:
     return part
 
 
+def offset_holed_box_part() -> NxDocument:
+    """The 60 cm^3 box with a Ø10 mm hole 20 mm deep drilled at an explicit OFF-CENTRE
+    point (10, 10, 50) mm on the top face — not the face centroid (~58.43 cm^3)."""
+    part = _make_box("offset-holed-box-part", 0)
+    hole = NxHole(
+        name="Hole1",
+        diameter_mm=10,
+        depth_mm=20,
+        placement_face=NxFaceDescriptor(centroid=[20, 15, 50], normal=[0, 0, 1]),
+        center=[10, 10, 50],
+    )
+    part.features.append(hole)
+    return part
+
+
 def assembly_doc() -> NxDocument:
     """An assembly placing the same 60 cm^3 box twice (origin and x = 100 mm)."""
     box = _make_box("box-component", 0)
@@ -375,6 +390,7 @@ def all_fixtures() -> List[NxDocument]:
         chamfered_box_part(),
         shelled_box_part(),
         holed_box_part(),
+        offset_holed_box_part(),
         sweep_part(),
         loft_part(),
         arc_slot_part(),

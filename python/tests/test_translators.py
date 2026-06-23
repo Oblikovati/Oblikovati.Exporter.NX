@@ -141,6 +141,17 @@ def test_chamfer_shell_draft_hole_dispatch():
     hole_data = tr.translate(hole, {})
     assert hole_data.payload.diameter == 1.0
     assert hole_data.payload.depth == 2.0
+    assert hole_data.payload.center is None  # centroid drill: center omitted
+
+
+def test_hole_with_explicit_center_scaled_to_centimetres():
+    hole = NxHole(
+        name="H", diameter_mm=10, depth_mm=20,
+        placement_face=NxFaceDescriptor(centroid=[20, 15, 50]),
+        center=[10, 10, 50],
+    )
+    payload = FeatureTranslator(ExportReport()).translate(hole, {}).payload
+    assert payload.center == [1.0, 1.0, 5.0]  # mm -> cm
 
 
 def _square_sketch():

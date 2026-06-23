@@ -90,13 +90,18 @@ class FaceDressData:
 
 @dataclass
 class HoleData:
-    """A hole. The placement face is a geometric descriptor. Diameter/depth are cm."""
+    """A hole. The placement face is a geometric descriptor. Diameter/depth are cm.
+
+    ``center`` is the explicit drill point in model space (cm); the kernel projects it onto
+    the placement face's plane. Omitted (None) means drill at the face centroid.
+    """
 
     diameter: float = 0.0
     depth: float = 0.0
     through_all: Optional[bool] = None
     type: str = "drilled"
     geom_face: Optional[GeomFaceRefData] = None
+    center: Optional[List[float]] = None
 
     def to_yaml(self) -> Dict[str, Any]:
         body: Dict[str, Any] = {"diameter": self.diameter, "depth": self.depth}
@@ -105,6 +110,8 @@ class HoleData:
         body["type"] = self.type
         if self.geom_face is not None:
             body["geomFace"] = self.geom_face.to_yaml()
+        if self.center is not None:
+            body["center"] = list(self.center)
         return body
 
 
