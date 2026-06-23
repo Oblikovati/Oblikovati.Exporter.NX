@@ -1,97 +1,50 @@
 # SPDX-License-Identifier: GPL-2.0-only
-"""Reads a part's sketches into the IR.
+"""Reads a part's sketches into the IR: geometry, real constraints, real dimensions.
 
-The sketch plane is fitted from the curves' 3D points (avoiding the uncertain NX
-sketch-plane API); points project into that frame as 2D coordinates. Lines and full
-circles are extracted; coincidence is inferred from endpoints that meet, so profiles
-close in Oblikovati (which is what makes a profile extrudable). Partial arcs, splines,
-and NX's explicit constraints/dimensions are not yet read — flagged for live-NX
-completion (geometry is positioned correctly; the missing dimensions are the parametric
-refinement). UNVERIFIED: needs a real NX session.
+Geometry (lines, circles, arcs, ellipses, splines) and the fitted plane come from
+``sketch_geometry``; the real NX geometric constraints and dimensional constraints come
+from ``sketch_constraint_reader``. When NX returns no geometric constraints (an older
+part, or an API mismatch), coincidence is INFERRED from meeting line endpoints so profiles
+still close — the original fallback, now a safety net rather than the only path.
 
-Identity maps key on the stable NXOpen ``.Tag`` rather than Python object identity,
-since NXOpen may hand back a fresh wrapper per call for the same underlying object.
+UNVERIFIED: needs a real NX session (the constraint/geometry reads follow the documented
+NXOpen API but can only be confirmed live).
 """
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-import NXOpen
-
-from ..model import sketch_plane_math as spm
 from ..model.sketch import (
     NxConstraintKind,
-    NxCurve,
     NxCurveKind,
     NxCurvePointRole,
     NxPointRef,
     NxSketch,
     NxSketchConstraint,
 )
+from . import sketch_constraint_reader, sketch_geometry
 
 _COINCIDENCE_TOL = 1e-4  # mm, in sketch 2D
 
 
-def extract(part, document, curve_tag_to_sketch: Dict[int, int]) -> None:
+def extract(part, document, curve_tag_to_sketch: Dict[int, int], report) -> None:
     for sketch in part.Sketches:
         geometry = list(sketch.GetAllGeometry())
-        extracted = _extract_one(sketch, geometry)
+        extracted, tag_to_curve_id = sketch_geometry.read(sketch, geometry)
         if extracted is None:
             continue
+
+        read = sketch_constraint_reader.read_constraints(sketch, extracted, tag_to_curve_id, report)
+        if read == 0:
+            _infer_coincidences(extracted)  # fallback so profiles still close
+        sketch_constraint_reader.read_dimensions(sketch, extracted, tag_to_curve_id, report)
+
         index = len(document.sketches)
         document.sketches.append(extracted)
         # Map this sketch's curves so a feature's section resolves to its sketch index.
         for obj in geometry:
             curve_tag_to_sketch[obj.Tag] = index
-
-
-def _extract_one(sketch, geometry) -> Optional[NxSketch]:
-    frame = spm.fit(_collect_points(geometry))
-    result = NxSketch(
-        name=sketch.Name, origin=frame.origin, xaxis=frame.xaxis, yaxis=frame.yaxis
-    )
-
-    next_id = 1
-    for obj in geometry:
-        if isinstance(obj, NXOpen.Line):
-            result.curves.append(_line_curve(next_id, obj, frame))
-            next_id += 1
-        elif isinstance(obj, NXOpen.Arc) and _is_full_circle(obj):
-            result.curves.append(_circle_curve(next_id, obj, frame))
-            next_id += 1
-
-    _infer_coincidences(result)
-    return None if not result.curves else result
-
-
-def _collect_points(geometry) -> List[List[float]]:
-    points: List[List[float]] = []
-    for obj in geometry:
-        if isinstance(obj, NXOpen.Line):
-            points.append(_p(obj.StartPoint))
-            points.append(_p(obj.EndPoint))
-        elif isinstance(obj, NXOpen.Arc):
-            points.append(_p(obj.CenterPoint))
-    return points
-
-
-def _line_curve(curve_id: int, line, frame: spm.SketchPlaneFrame) -> NxCurve:
-    return NxCurve(
-        id=curve_id,
-        kind=NxCurveKind.LINE,
-        start=frame.to_2d(_p(line.StartPoint)),
-        end=frame.to_2d(_p(line.EndPoint)),
-    )
-
-
-def _circle_curve(curve_id: int, arc, frame: spm.SketchPlaneFrame) -> NxCurve:
-    return NxCurve(
-        id=curve_id,
-        kind=NxCurveKind.CIRCLE,
-        center=frame.to_2d(_p(arc.CenterPoint)),
-        radius=arc.Radius,
-    )
 
 
 # Emit a coincident constraint for each pair of line endpoints that meet, so the profile
@@ -113,14 +66,6 @@ def _infer_coincidences(sketch: NxSketch) -> None:
                 constraint.points.append(slots[i][0])
                 constraint.points.append(slots[j][0])
                 sketch.constraints.append(constraint)
-
-
-def _is_full_circle(arc) -> bool:
-    return abs((arc.EndAngle - arc.StartAngle) - 2 * math.pi) < 1e-6
-
-
-def _p(point) -> List[float]:
-    return [point.X, point.Y, point.Z]
 
 
 def _distance_2d(a, b) -> float:

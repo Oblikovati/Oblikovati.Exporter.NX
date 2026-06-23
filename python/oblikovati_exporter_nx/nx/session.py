@@ -13,6 +13,10 @@ from ..model.document import NxDocument
 
 
 class NxSession(Protocol):
-    """Reads the current work part/assembly into the NX-neutral IR."""
+    """Reads the current work part/assembly into the NX-neutral IR.
 
-    def extract_work_document(self) -> NxDocument: ...
+    The ``report`` (an ExportReport) collects extraction diagnostics so anything the
+    reader cannot map is surfaced to the user rather than silently dropped.
+    """
+
+    def extract_work_document(self, report) -> NxDocument: ...

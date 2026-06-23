@@ -46,6 +46,35 @@ journal is shaped the way it is.
    placed in `<UGII_USER_DIR>/startup`. The journal can also simply be played from
    **File ▸ Execute ▸ NX Open** / **Tools ▸ Journal ▸ Play** with no configuration.
 
+## Reading the sketch model (constraints, dimensions, entities)
+
+The exporter reads the **real** sketch, not just geometry:
+
+- **Entities** (`nx/sketch_geometry.py`): line, full circle, partial arc, ellipse,
+  elliptical arc and spline. The plane is fitted from the curves' 3D points and every
+  point projects into that 2D frame, so absolute geometry is reconstructed without
+  trusting the NX sketch-plane API.
+- **Geometric constraints** (`nx/sketch_constraint_reader.py`): queried per type via
+  `sketch.GetAllConstraintsOfType(NXOpen.Sketch.ConstraintClass.Geometric, <ConstraintType>)`,
+  then each `SketchGeometricConstraint.GetGeometry()` yields `Sketch.ConstraintGeometry`
+  items carrying the constrained object (`.Geometry`) and which defining point of it
+  (`.PointType`). Those split into point operands and curve operands to form the IR
+  constraint shape the translator expects (coincident, horizontal/vertical, parallel,
+  perpendicular, collinear, equal-length, concentric, equal-radius, tangent, point-on-curve,
+  midpoint, fix, symmetry).
+- **Dimensions**: `GetAllConstraintsOfType(..., Dimension, NoCon)` →
+  `SketchDimensionalConstraint`, mapped to distance/radius/diameter/angle with the driving
+  expression (the parameter name or literal) read from its associated expression.
+- **Fallback**: if NX returns no geometric constraints (older parts, or an API mismatch),
+  coincidence is inferred from meeting line endpoints so profiles still close.
+
+Anything that cannot be mapped is recorded in the export report (surfaced to the user),
+never emitted wrong. The IR/translator/recipe side of all of this is NXOpen-free and fully
+unit-tested + round-tripped through the real `oblikovati-cli`; the **read** side carries
+the UNVERIFIED caveat below — the NX `ConstraintType`/`ConstraintPointType` member names
+and the dimension expression accessor are best-effort vs the documented API and need a
+live NX session to confirm.
+
 ## Status of the `nx/` adapter
 
 As with the C# add-in's NXOpen adapter, the `nx/` modules cannot be exercised off a live

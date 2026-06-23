@@ -243,6 +243,55 @@ def assembly_doc() -> NxDocument:
     return assembly
 
 
+def arc_slot_part() -> NxDocument:
+    """A rounded slot: two horizontal lines closed by two semicircular arcs.
+
+    Exercises the arc entity (center/start/end + ccw) inside a closed profile. Round-trip
+    is OPEN_ONLY (free-form arc DOF=0 is impractical to hand-author); field exactness is
+    covered by the translator unit tests.
+    """
+    part = NxDocument(display_name="arc-slot-part", kind=NxDocumentKind.PART, length_unit="mm")
+    sketch = NxSketch(name="Slot")
+    top, right, bottom, left = 1, 2, 3, 4
+    sketch.curves.append(_line(top, -20, 10, 20, 10))   # top edge
+    sketch.curves.append(NxCurve(  # right cap, from (20,10) down to (20,-10)
+        id=right, kind=NxCurveKind.ARC, center=[20, 0], start=[20, 10], end=[20, -10], ccw=False))
+    sketch.curves.append(_line(bottom, 20, -10, -20, -10))  # bottom edge
+    sketch.curves.append(NxCurve(  # left cap, from (-20,-10) up to (-20,10)
+        id=left, kind=NxCurveKind.ARC, center=[-20, 0], start=[-20, -10], end=[-20, 10], ccw=False))
+    _coincide(sketch, top, NxCurvePointRole.END, right, NxCurvePointRole.START)
+    _coincide(sketch, right, NxCurvePointRole.END, bottom, NxCurvePointRole.START)
+    _coincide(sketch, bottom, NxCurvePointRole.END, left, NxCurvePointRole.START)
+    _coincide(sketch, left, NxCurvePointRole.END, top, NxCurvePointRole.START)
+    part.sketches.append(sketch)
+    return part
+
+
+def ellipse_part() -> NxDocument:
+    """A single ellipse (major axis +X, 40x20 mm) fixed at the origin. OPEN_ONLY round-trip."""
+    part = NxDocument(display_name="ellipse-part", kind=NxDocumentKind.PART, length_unit="mm")
+    sketch = NxSketch(name="Ellipse")
+    sketch.curves.append(
+        NxCurve(id=1, kind=NxCurveKind.ELLIPSE, center=[0, 0],
+                major_axis=[1, 0], major_radius=40, minor_radius=20)
+    )
+    sketch.constraints.append(_fix(1, NxCurvePointRole.CENTER))
+    part.sketches.append(sketch)
+    return part
+
+
+def spline_part() -> NxDocument:
+    """A through-points (fit) spline of four points. OPEN_ONLY round-trip."""
+    part = NxDocument(display_name="spline-part", kind=NxDocumentKind.PART, length_unit="mm")
+    sketch = NxSketch(name="Spline")
+    sketch.curves.append(
+        NxCurve(id=1, kind=NxCurveKind.SPLINE,
+                spline_points=[[0, 0], [20, 30], [50, 10], [70, 40]], fit=True)
+    )
+    part.sketches.append(sketch)
+    return part
+
+
 def datum_plane_part() -> NxDocument:
     """A part carrying one datum plane offset 10 mm above XY (a fixed frame)."""
     part = NxDocument(display_name="datum-plane-part", kind=NxDocumentKind.PART, length_unit="mm")
@@ -272,7 +321,16 @@ def all_fixtures() -> List[NxDocument]:
         chamfered_box_part(),
         shelled_box_part(),
         holed_box_part(),
+        arc_slot_part(),
+        ellipse_part(),
+        spline_part(),
     ]
+
+
+# Fixtures whose round-trip is open-only (the file must load/recompute in the real reader,
+# but free-form arc/ellipse/spline sketches aren't hand-authored to DOF 0). Field-level
+# correctness for these is asserted by the translator unit tests instead.
+OPEN_ONLY = frozenset({"arc-slot-part.opd", "ellipse-part.opd", "spline-part.opd"})
 
 
 def _make_box(name: str, x0: float) -> NxDocument:

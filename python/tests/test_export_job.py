@@ -13,7 +13,7 @@ class FakeNxSession:
     def __init__(self, document):
         self._document = document
 
-    def extract_work_document(self):
+    def extract_work_document(self, report):
         return self._document
 
 
