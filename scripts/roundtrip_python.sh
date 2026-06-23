@@ -15,6 +15,10 @@ OUT="$(mktemp -d)"
 
 PYTHONPATH="$ROOT/python" "$PY" "$ROOT/python/tools/goldengen.py" "$OUT"
 
+# Fixtures whose round-trip is open-only (load/recompute, but not DOF-0 hand-authored).
+OPEN_ONLY="$(PYTHONPATH="$ROOT/python" "$PY" -c \
+    'from oblikovati_exporter_nx.fixtures.sample_parts import OPEN_ONLY; print(" ".join(sorted(OPEN_ONLY)))')"
+
 status=0
 for f in "$OUT"/*.opd "$OUT"/*.oad; do
     [ -e "$f" ] || continue
@@ -26,8 +30,9 @@ for f in "$OUT"/*.opd "$OUT"/*.oad; do
         status=1
         continue
     fi
-    # 2) For parts, every sketch is fully constrained (DOF 0) with a closed profile.
-    if [[ "$f" == *.oad ]]; then
+    # 2) For parts (except open-only ones), every sketch is fully constrained (DOF 0)
+    #    with a closed profile.
+    if [[ "$f" == *.oad ]] || [[ " $OPEN_ONLY " == *" $name "* ]]; then
         echo "OK   $name"
     elif "$CLI" script run "$ROOT/scripts/validate_sketches.lua" --doc "$f" >/dev/null 2>&1; then
         echo "OK   $name"

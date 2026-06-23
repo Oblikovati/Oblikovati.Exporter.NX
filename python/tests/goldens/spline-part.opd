@@ -1,0 +1,49 @@
+schemaVersion: 2
+documentType: 1
+displayName: spline-part
+model:
+  units:
+    length: mm
+    angle: deg
+    area: mm^2
+    volume: mm^3
+    mass: kg
+    time: s
+  sketches:
+  - id: 1
+    name: Spline
+    plane:
+      origin:
+      - 0
+      - 0
+      - 0
+      xAxis:
+      - 1
+      - 0
+      - 0
+      yAxis:
+      - 0
+      - 1
+      - 0
+    points:
+    - id: 2
+      x: 0
+      y: 0
+    - id: 3
+      x: 2
+      y: 3
+    - id: 4
+      x: 5
+      y: 1
+    - id: 5
+      x: 7
+      y: 4
+    entities:
+    - id: 6
+      kind: spline
+      points:
+      - 2
+      - 3
+      - 4
+      - 5
+      fit: true

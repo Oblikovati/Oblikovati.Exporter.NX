@@ -41,15 +41,27 @@ class PointData:
 
 @dataclass
 class EntityData:
-    """One curve entity. ``points`` lists defining point ids in a kind-specific order."""
+    """One curve entity. ``points`` lists defining point ids in a kind-specific order.
+
+    Kind-specific fields (radius, ellipse major/minor, spline closed/fit, ...) are
+    nullable so each is emitted only for the kinds that use it. The key order matches
+    the kernel's EntityData (model/sketch/serialize.go).
+    """
 
     id: int = 0
     kind: str = ""
     points: List[int] = field(default_factory=list)
     radius: Optional[float] = None
+    major_axis: Optional[List[float]] = None
+    major_radius: Optional[float] = None
+    minor_radius: Optional[float] = None
+    start_angle: Optional[float] = None
+    end_angle: Optional[float] = None
     ccw: Optional[bool] = None
     construction: Optional[bool] = None
     centerline: Optional[bool] = None
+    closed: Optional[bool] = None
+    fit: Optional[bool] = None
 
     def to_yaml(self) -> Dict[str, Any]:
         body: Dict[str, Any] = {"id": self.id, "kind": self.kind}
@@ -57,12 +69,26 @@ class EntityData:
             body["points"] = list(self.points)
         if self.radius is not None:
             body["radius"] = self.radius
+        if self.major_axis is not None:
+            body["majorAxis"] = list(self.major_axis)
+        if self.major_radius is not None:
+            body["majorRadius"] = self.major_radius
+        if self.minor_radius is not None:
+            body["minorRadius"] = self.minor_radius
+        if self.start_angle is not None:
+            body["startAngle"] = self.start_angle
+        if self.end_angle is not None:
+            body["endAngle"] = self.end_angle
         if self.ccw is not None:
             body["ccw"] = self.ccw
         if self.construction is not None:
             body["construction"] = self.construction
         if self.centerline is not None:
             body["centerline"] = self.centerline
+        if self.closed is not None:
+            body["closed"] = self.closed
+        if self.fit is not None:
+            body["fit"] = self.fit
         return body
 
 

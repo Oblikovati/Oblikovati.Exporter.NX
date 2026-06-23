@@ -39,8 +39,10 @@ class ExportRunner:
         self._writer = writer
 
     def run(self) -> ExportOutput:
-        document = self._session.extract_work_document()
+        # One report spans extraction and translation, so live extraction diagnostics
+        # (e.g. a constraint that could not be mapped) reach the user summary too.
         report = ExportReport()
+        document = self._session.extract_work_document(report)
         files: List[ExportFile] = []
         for translated in self._exporter.export(document, report):
             files.append(ExportFile(translated.file_name, self._writer.write(translated.document)))

@@ -117,6 +117,23 @@ class SketchTranslator:
         if kind == NxConstraintKind.FIX:
             row.points.append(points.point_id(constraint.points[0]))
             return row
+        if kind == NxConstraintKind.SYMMETRY:
+            # Two points symmetric about a line (the engine's point-based symmetry).
+            row.points.append(points.point_id(constraint.points[0]))
+            row.points.append(points.point_id(constraint.points[1]))
+            row.curves.append(entity_ids[constraint.curves[0]])
+            return row
+        if kind == NxConstraintKind.GROUND:
+            for point_ref in constraint.points:
+                row.points.append(points.point_id(point_ref))
+            return row
+        if kind == NxConstraintKind.SMOOTH:
+            # The two junction points (one per curve) plus the two smooth curves.
+            row.points.append(points.point_id(constraint.points[0]))
+            row.points.append(points.point_id(constraint.points[1]))
+            row.curves.append(entity_ids[constraint.curves[0]])
+            row.curves.append(entity_ids[constraint.curves[1]])
+            return row
         self._report.unsupported("sketch-constraint", kind.name)
         return None
 
@@ -145,18 +162,39 @@ def _build_entity(entity_id: int, curve: NxCurve, points: SketchPointTable) -> E
         kind=curve.kind.value,
         construction=True if curve.construction else None,
     )
+
+    def center() -> int:
+        return points.point_id(NxPointRef(curve.id, NxCurvePointRole.CENTER))
+
     if curve.kind == NxCurveKind.LINE:
         entity.points.append(points.point_id(NxPointRef(curve.id, NxCurvePointRole.START)))
         entity.points.append(points.point_id(NxPointRef(curve.id, NxCurvePointRole.END)))
         entity.centerline = True if curve.centerline else None
     elif curve.kind == NxCurveKind.CIRCLE:
-        entity.points.append(points.point_id(NxPointRef(curve.id, NxCurvePointRole.CENTER)))
+        entity.points.append(center())
         entity.radius = curve.radius * MM_TO_CM
-    else:  # arc
-        entity.points.append(points.point_id(NxPointRef(curve.id, NxCurvePointRole.CENTER)))
+    elif curve.kind == NxCurveKind.ARC:
+        entity.points.append(center())
         entity.points.append(points.point_id(NxPointRef(curve.id, NxCurvePointRole.START)))
         entity.points.append(points.point_id(NxPointRef(curve.id, NxCurvePointRole.END)))
         entity.ccw = True if curve.ccw else None
+    elif curve.kind == NxCurveKind.ELLIPSE:
+        entity.points.append(center())
+        entity.major_axis = list(curve.major_axis)
+        entity.major_radius = curve.major_radius * MM_TO_CM
+        entity.minor_radius = curve.minor_radius * MM_TO_CM
+    elif curve.kind == NxCurveKind.ELLIPTICAL_ARC:
+        entity.points.append(center())
+        entity.major_axis = list(curve.major_axis)
+        entity.major_radius = curve.major_radius * MM_TO_CM
+        entity.minor_radius = curve.minor_radius * MM_TO_CM
+        entity.start_angle = curve.start_angle
+        entity.end_angle = curve.end_angle
+    else:  # spline
+        for point_id in points.spline_point_ids(curve.id):
+            entity.points.append(point_id)
+        entity.closed = True if curve.closed else None
+        entity.fit = True if curve.fit else None
     return entity
 
 

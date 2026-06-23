@@ -1,0 +1,45 @@
+schemaVersion: 2
+documentType: 1
+displayName: ellipse-part
+model:
+  units:
+    length: mm
+    angle: deg
+    area: mm^2
+    volume: mm^3
+    mass: kg
+    time: s
+  sketches:
+  - id: 1
+    name: Ellipse
+    plane:
+      origin:
+      - 0
+      - 0
+      - 0
+      xAxis:
+      - 1
+      - 0
+      - 0
+      yAxis:
+      - 0
+      - 1
+      - 0
+    points:
+    - id: 2
+      x: 0
+      y: 0
+    entities:
+    - id: 3
+      kind: ellipse
+      points:
+      - 2
+      majorAxis:
+      - 1
+      - 0
+      majorRadius: 4
+      minorRadius: 2
+    constraints:
+    - kind: fix
+      points:
+      - 2

@@ -29,7 +29,7 @@ class NxSessionAdapter:
     def __init__(self, session=None) -> None:
         self._session = session if session is not None else NXOpen.Session.GetSession()
 
-    def extract_work_document(self) -> NxDocument:
+    def extract_work_document(self, report) -> NxDocument:
         work = self._session.Parts.Work
         if work is None:
             raise RuntimeError("no work part is open in NX")
@@ -40,13 +40,13 @@ class NxSessionAdapter:
         try:
             root = work.ComponentAssembly.RootComponent
             if root is not None and len(root.GetChildren()) > 0:
-                return self._extract_assembly(work, root)
-            return self._extract_part(work)
+                return self._extract_assembly(work, root, report)
+            return self._extract_part(work, report)
         finally:
             # Roll back any builder churn so the export leaves the part untouched.
             self._session.UndoToMark(mark, "Oblikovati export (read-only)")
 
-    def _extract_part(self, part) -> NxDocument:
+    def _extract_part(self, part, report) -> NxDocument:
         document = NxDocument(
             display_name=part.Leaf,
             kind=NxDocumentKind.PART,
@@ -56,17 +56,17 @@ class NxSessionAdapter:
         expression_extractor.extract(part, document)
         # The map lets a sketch-based feature resolve its section to the IR sketch index.
         curve_tag_to_sketch = {}
-        sketch_extractor.extract(part, document, curve_tag_to_sketch)
+        sketch_extractor.extract(part, document, curve_tag_to_sketch, report)
         feature_extractor.extract(part, document, curve_tag_to_sketch)
         return document
 
-    def _extract_assembly(self, part, root) -> NxDocument:
+    def _extract_assembly(self, part, root, report) -> NxDocument:
         document = NxDocument(
             display_name=part.Leaf,
             kind=NxDocumentKind.ASSEMBLY,
             length_unit=_length_unit_of(part),
         )
-        components = component_extractor.ComponentExtractor(self._extract_part)
+        components = component_extractor.ComponentExtractor(lambda p: self._extract_part(p, report))
         for child in root.GetChildren():
             document.occurrences.append(components.occurrence(child))
         return document
