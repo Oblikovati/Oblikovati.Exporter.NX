@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: GPL-2.0-only
+[project]
+name = "oblikovati-exporter-nx"
+version = "0.1.0"
+description = "NX Open Python journal that exports the open NX document to native Oblikovati .opd/.oad"
+requires-python = ">=3.8"
+# No runtime dependencies: the journal must import cleanly under NX's embedded CPython,
+# which has no pip packages available.
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["oblikovati_exporter_nx"]
+# The nx/ adapter imports NXOpen and only runs inside a live NX session (mirrors the C#
+# adapter, which is likewise unverified in CI); the journal/goldengen are thin glue.
+omit = [
+    "oblikovati_exporter_nx/nx/*",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "\\.\\.\\.",
+]

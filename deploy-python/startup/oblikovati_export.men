@@ -1,0 +1,14 @@
+! SPDX-License-Identifier: GPL-2.0-only
+! Oblikovati exporter menu (Python journal edition). NX reads this from
+! <UGII_USER_DIR>/startup at launch and adds an "Export to Oblikovati" item under the
+! File menu that PLAYS the oblikovati_export.py journal shipped beside it. A journal needs
+! no compiled, code-signed DLL, so this loads on any NX seat that can play journals.
+VERSION 120
+
+EDIT UG_GATEWAY_MAIN_MENUBAR
+
+AFTER UG_FILE_EXPORT
+BUTTON OBLIKOVATI_EXPORT
+LABEL Export to Oblikovati...
+ACTIONS oblikovati_export.py
+END_OF_AFTER

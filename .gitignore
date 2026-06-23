@@ -17,3 +17,14 @@ coverage*.xml
 
 # Local cross-repo checkout used by CI Job 2
 _oblikovati/
+_oblikovati-api/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+.venv/
