@@ -21,10 +21,13 @@ from ..model.feature import (
     NxCircularPattern,
     NxExtentDirection,
     NxExtrude,
+    NxLoft,
+    NxLoftSection,
     NxMirror,
     NxOperation,
     NxRectangularPattern,
     NxRevolve,
+    NxSweep,
 )
 from ..model.sketch import (
     NxConstraintKind,
@@ -243,6 +246,57 @@ def assembly_doc() -> NxDocument:
     return assembly
 
 
+def sweep_part() -> NxDocument:
+    """A circle profile (Ø10 mm) swept 50 mm along +Z — a cylinder (~3.93 cm^3)."""
+    part = NxDocument(display_name="sweep-part", kind=NxDocumentKind.PART, length_unit="mm")
+    part.expressions.append(NxExpression(name="dia", formula="10", unit="mm"))
+    sketch = NxSketch(name="Profile")
+    sketch.curves.append(NxCurve(id=1, kind=NxCurveKind.CIRCLE, center=[0, 0], radius=5))
+    sketch.constraints.append(_fix(1, NxCurvePointRole.CENTER))
+    diameter = NxSketchDimension(kind=NxDimensionKind.DIAMETER, expression="dia")
+    diameter.curves.append(1)
+    sketch.dimensions.append(diameter)
+    part.sketches.append(sketch)
+    part.features.append(
+        NxSweep(
+            name="Sweep1", profile_sketch_index=0, profile_index=0,
+            path=[[0, 0, 0], [0, 0, 50]], operation=NxOperation.NEW_BODY,
+        )
+    )
+    return part
+
+
+def loft_part() -> NxDocument:
+    """A loft between a Ø10 mm circle at z=0 and a Ø20 mm circle at z=50 mm (a frustum)."""
+    part = NxDocument(display_name="loft-part", kind=NxDocumentKind.PART, length_unit="mm")
+    part.expressions.append(NxExpression(name="d0", formula="10", unit="mm"))
+    part.expressions.append(NxExpression(name="d1", formula="20", unit="mm"))
+
+    bottom = NxSketch(name="Bottom")
+    bottom.curves.append(NxCurve(id=1, kind=NxCurveKind.CIRCLE, center=[0, 0], radius=5))
+    bottom.constraints.append(_fix(1, NxCurvePointRole.CENTER))
+    dim0 = NxSketchDimension(kind=NxDimensionKind.DIAMETER, expression="d0")
+    dim0.curves.append(1)
+    bottom.dimensions.append(dim0)
+
+    top = NxSketch(name="Top", origin=[0, 0, 50])
+    top.curves.append(NxCurve(id=1, kind=NxCurveKind.CIRCLE, center=[0, 0], radius=10))
+    top.constraints.append(_fix(1, NxCurvePointRole.CENTER))
+    dim1 = NxSketchDimension(kind=NxDimensionKind.DIAMETER, expression="d1")
+    dim1.curves.append(1)
+    top.dimensions.append(dim1)
+
+    part.sketches.extend([bottom, top])
+    part.features.append(
+        NxLoft(
+            name="Loft1",
+            sections=[NxLoftSection(0, 0), NxLoftSection(1, 0)],
+            operation=NxOperation.NEW_BODY,
+        )
+    )
+    return part
+
+
 def arc_slot_part() -> NxDocument:
     """A rounded slot: two horizontal lines closed by two semicircular arcs.
 
@@ -321,6 +375,8 @@ def all_fixtures() -> List[NxDocument]:
         chamfered_box_part(),
         shelled_box_part(),
         holed_box_part(),
+        sweep_part(),
+        loft_part(),
         arc_slot_part(),
         ellipse_part(),
         spline_part(),

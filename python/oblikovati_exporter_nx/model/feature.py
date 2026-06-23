@@ -55,6 +55,38 @@ class NxRevolve(NxFeature):
 
 
 @dataclass
+class NxSweep(NxFeature):
+    """A sweep of a sketch profile along a path.
+
+    The profile is a sketch region; the path is an explicit polyline of 3D points in model
+    space (mm, the IR contract) — Oblikovati stores the path as points, not a sketch ref.
+    """
+
+    profile_sketch_index: int = 0
+    profile_index: int = 0
+    path: List[List[float]] = field(default_factory=list)
+    closed: bool = False
+    operation: NxOperation = NxOperation.NEW_BODY
+
+
+@dataclass
+class NxLoftSection:
+    """One section of a loft: a profile (a region of a sketch)."""
+
+    sketch_index: int = 0
+    profile_index: int = 0
+
+
+@dataclass
+class NxLoft(NxFeature):
+    """A loft through an ordered list of profile sections."""
+
+    sections: List[NxLoftSection] = field(default_factory=list)
+    closed: bool = False
+    operation: NxOperation = NxOperation.NEW_BODY
+
+
+@dataclass
 class NxReplicatingFeature(NxFeature):
     """Base of features that replicate earlier features by IR feature index."""
 

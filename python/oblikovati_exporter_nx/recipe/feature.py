@@ -140,6 +140,52 @@ class ExtrudeData:
 
 
 @dataclass
+class SweepData:
+    """A sweep: a profile (sketch + region) swept along a 3D-point path polyline (cm)."""
+
+    sketch: int = 0
+    profile: int = 0
+    path: List[List[float]] = field(default_factory=list)
+    closed: Optional[bool] = None
+    operation: str = "newBody"
+
+    def to_yaml(self) -> Dict[str, Any]:
+        body: Dict[str, Any] = {"sketch": self.sketch, "profile": self.profile}
+        body["path"] = [list(p) for p in self.path]
+        if self.closed is not None:
+            body["closed"] = self.closed
+        body["operation"] = self.operation
+        return body
+
+
+@dataclass
+class LoftSectionData:
+    """One loft section: a profile (sketch + region index)."""
+
+    sketch: int = 0
+    profile: int = 0
+
+    def to_yaml(self) -> Dict[str, Any]:
+        return {"sketch": self.sketch, "profile": self.profile}
+
+
+@dataclass
+class LoftData:
+    """A loft through an ordered list of profile sections."""
+
+    sections: List[LoftSectionData] = field(default_factory=list)
+    closed: Optional[bool] = None
+    operation: str = "newBody"
+
+    def to_yaml(self) -> Dict[str, Any]:
+        body: Dict[str, Any] = {"sections": [s.to_yaml() for s in self.sections]}
+        if self.closed is not None:
+            body["closed"] = self.closed
+        body["operation"] = self.operation
+        return body
+
+
+@dataclass
 class RevolveData:
     """A revolve about the profile sketch's own centerline. Angle in radians; None = full."""
 
