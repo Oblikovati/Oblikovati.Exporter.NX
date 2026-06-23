@@ -75,6 +75,19 @@ the UNVERIFIED caveat below — the NX `ConstraintType`/`ConstraintPointType` me
 and the dimension expression accessor are best-effort vs the documented API and need a
 live NX session to confirm.
 
+## Sweep and loft
+
+Sweep and loft are fully represented and round-tripped: a sweep is a profile (sketch +
+region) plus a 3D-point path polyline; a loft is an ordered list of profile sections. The
+pure core (recipe/translator/fixtures) is verified against the real `oblikovati-cli` — the
+swept cylinder and lofted frustum build with the expected volume. Extraction
+(`feature_extractor._sweep`/`_loft`) reads NX's swept and through-curves features via their
+builders, resolving each section to its sketch index and tessellating the sweep guide into a
+polyline with `sweep_path.polyline` (lines exact; arcs/splines via the UF curve evaluator —
+the NX counterpart of Inventor's `GetStrokes`). The builder member names
+(`SweptBuilder.SectionList`/`GuideList`, `ThroughCurvesBuilder.SectionsList`) and the UF Eval
+calls are best-effort vs the documented API and carry the UNVERIFIED caveat below.
+
 ## Status of the `nx/` adapter
 
 As with the C# add-in's NXOpen adapter, the `nx/` modules cannot be exercised off a live

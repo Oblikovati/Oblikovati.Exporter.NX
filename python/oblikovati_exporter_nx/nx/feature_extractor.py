@@ -27,12 +27,15 @@ from ..model.feature import (
     NxExtentDirection,
     NxExtrude,
     NxFeature,
+    NxLoft,
+    NxLoftSection,
     NxMirror,
     NxOperation,
     NxRectangularPattern,
     NxRevolve,
+    NxSweep,
 )
-from . import centerline_injector, edge_geometry, face_geometry
+from . import centerline_injector, edge_geometry, face_geometry, sweep_path
 
 _RAD_TO_DEG = 180.0 / math.pi
 
@@ -58,6 +61,10 @@ def _extract_feature(
         return _extrude(part, feature, curve_tag_to_sketch)
     if feature_type in ("REVOLVE", "REVOLVED"):
         return _revolve(part, feature, document, curve_tag_to_sketch)
+    if feature_type in ("SWEEP", "SWEPT", "VARIATIONAL SWEEP", "SWEEP ALONG GUIDE"):
+        return _sweep(part, feature, curve_tag_to_sketch)
+    if feature_type in ("THROUGH CURVES", "THROUGH_CURVES", "TCRV", "LOFT"):
+        return _loft(part, feature, curve_tag_to_sketch)
     if feature_type == "EDGE BLEND":
         return _fillet(part, feature)
     if feature_type == "CHAMFER":
@@ -114,6 +121,57 @@ def _revolve(part, feature, document, curve_tag_to_sketch) -> Optional[NxFeature
         )
     finally:
         builder.Destroy()
+
+
+def _sweep(part, feature, curve_tag_to_sketch) -> Optional[NxFeature]:
+    # NX swept feature: the first section is the profile; the guide string is the path.
+    # The path is tessellated to a 3D polyline (Oblikovati stores points, not a sketch).
+    builder = part.Features.CreateSweptBuilder(feature)
+    try:
+        sections = _sections_of(builder, ("SectionList", "Sections"))
+        guides = _sections_of(builder, ("GuideList", "Guides"))
+        if not sections or not guides:
+            return None
+        profile_sketch = _sketch_index_of(sections[0], curve_tag_to_sketch)
+        path = sweep_path.polyline(guides[0])
+        if profile_sketch < 0 or len(path) < 2:
+            return None
+        return NxSweep(
+            name=feature.Name, profile_sketch_index=profile_sketch, profile_index=0,
+            path=path, operation=NxOperation.NEW_BODY,
+        )
+    finally:
+        builder.Destroy()
+
+
+def _loft(part, feature, curve_tag_to_sketch) -> Optional[NxFeature]:
+    # NX "through curves": each section is a profile sketch; loft runs through them in order.
+    builder = part.Features.CreateThroughCurvesBuilder(feature)
+    try:
+        sections = _sections_of(builder, ("SectionsList", "SectionList", "Sections"))
+        loft = NxLoft(name=feature.Name, operation=NxOperation.NEW_BODY)
+        for section in sections:
+            index = _sketch_index_of(section, curve_tag_to_sketch)
+            if index < 0:
+                return None  # a section did not resolve to an extracted sketch
+            loft.sections.append(NxLoftSection(sketch_index=index, profile_index=0))
+        return loft if len(loft.sections) >= 2 else None
+    finally:
+        builder.Destroy()
+
+
+# A swept/through-curves builder keeps its sections in one of a few member names across NX
+# versions; return the first that resolves to a non-empty list of Section objects.
+def _sections_of(builder, candidate_names) -> list:
+    for name in candidate_names:
+        holder = getattr(builder, name, None)
+        if holder is None:
+            continue
+        getter = getattr(holder, "GetSections", None)
+        sections = list(getter()) if getter is not None else list(holder)
+        if sections:
+            return sections
+    return []
 
 
 def _fillet(part, feature) -> NxFillet:

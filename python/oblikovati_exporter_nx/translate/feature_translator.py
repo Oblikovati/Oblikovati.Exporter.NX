@@ -14,20 +14,25 @@ from ..model.feature import (
     NxExtentDirection,
     NxExtrude,
     NxFeature,
+    NxLoft,
     NxMirror,
     NxOperation,
     NxRectangularPattern,
     NxReplicatingFeature,
     NxRevolve,
+    NxSweep,
 )
 from ..model.dressup import NxChamfer, NxDraft, NxFillet, NxHole, NxShell
 from ..recipe.feature import (
     CircPatternData,
     ExtrudeData,
     FeatureData,
+    LoftData,
+    LoftSectionData,
     MirrorData,
     RectPatternData,
     RevolveData,
+    SweepData,
 )
 from . import dressup_translator
 from .report import ExportReport
@@ -46,6 +51,10 @@ class FeatureTranslator:
             return _translate_extrude(feature)
         if isinstance(feature, NxRevolve):
             return _translate_revolve(feature)
+        if isinstance(feature, NxSweep):
+            return _translate_sweep(feature)
+        if isinstance(feature, NxLoft):
+            return _translate_loft(feature)
         if isinstance(feature, NxRectangularPattern):
             return self._translate_rect_pattern(feature, source_index)
         if isinstance(feature, NxCircularPattern):
@@ -166,6 +175,26 @@ def _translate_revolve(revolve: NxRevolve) -> FeatureData:
     return FeatureData(
         kind="revolve", name=_name_of(revolve), payload_alias="revolve", payload=payload
     )
+
+
+def _translate_sweep(sweep: NxSweep) -> FeatureData:
+    payload = SweepData(
+        sketch=sweep.profile_sketch_index,
+        profile=sweep.profile_index,
+        path=[scale_point(p) for p in sweep.path],
+        closed=True if sweep.closed else None,
+        operation=_operation_name(sweep.operation),
+    )
+    return FeatureData(kind="sweep", name=_name_of(sweep), payload_alias="sweep", payload=payload)
+
+
+def _translate_loft(loft: NxLoft) -> FeatureData:
+    payload = LoftData(
+        sections=[LoftSectionData(sketch=s.sketch_index, profile=s.profile_index) for s in loft.sections],
+        closed=True if loft.closed else None,
+        operation=_operation_name(loft.operation),
+    )
+    return FeatureData(kind="loft", name=_name_of(loft), payload_alias="loft", payload=payload)
 
 
 def _operation_name(operation: NxOperation) -> str:

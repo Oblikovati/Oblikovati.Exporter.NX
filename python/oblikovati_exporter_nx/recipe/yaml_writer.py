@@ -59,9 +59,23 @@ class RecipeYamlWriter:
             if isinstance(item, dict):
                 self._emit_mapping_item(item, indent, lines)
             elif _is_sequence(item):
-                raise ValueError("nested bare sequences are not used by the recipe schema")
+                self._emit_sequence_item(item, indent, lines)
             else:
                 lines.append(f"{pad}- {self._scalar(item)}")
+
+    # A sequence nested directly inside a sequence (e.g. a sweep path's 3D points): the
+    # inner sequence's first scalar shares the "- " line as "- - x", the rest follow at +2.
+    def _emit_sequence_item(self, seq: Sequence[Any], indent: int, lines: List[str]) -> None:
+        pad = " " * indent
+        if not seq:
+            lines.append(f"{pad}- []")
+            return
+        if any(isinstance(el, (dict, list, tuple)) for el in seq):
+            raise ValueError("only sequences of scalars may be nested in a sequence")
+        lines.append(f"{pad}- - {self._scalar(seq[0])}")
+        continuation = " " * (indent + 2)
+        for element in seq[1:]:
+            lines.append(f"{continuation}- {self._scalar(element)}")
 
     # One mapping inside a sequence: its first key shares the "- " line; the rest are
     # indented two past the dash, exactly as YamlDotNet lays them out.

@@ -1,0 +1,97 @@
+schemaVersion: 2
+documentType: 1
+displayName: loft-part
+model:
+  units:
+    length: mm
+    angle: deg
+    area: mm^2
+    volume: mm^3
+    mass: kg
+    time: s
+  parameters:
+  - name: d0
+    kind: user
+    expression: 10 mm
+  - name: d1
+    kind: user
+    expression: 20 mm
+  sketches:
+  - id: 1
+    name: Bottom
+    plane:
+      origin:
+      - 0
+      - 0
+      - 0
+      xAxis:
+      - 1
+      - 0
+      - 0
+      yAxis:
+      - 0
+      - 1
+      - 0
+    points:
+    - id: 2
+      x: 0
+      y: 0
+    entities:
+    - id: 3
+      kind: circle
+      points:
+      - 2
+      radius: 0.5
+    constraints:
+    - kind: fix
+      points:
+      - 2
+    dimensions:
+    - kind: diameter
+      curves:
+      - 3
+      expression: d0
+  - id: 4
+    name: Top
+    plane:
+      origin:
+      - 0
+      - 0
+      - 5
+      xAxis:
+      - 1
+      - 0
+      - 0
+      yAxis:
+      - 0
+      - 1
+      - 0
+    points:
+    - id: 5
+      x: 0
+      y: 0
+    entities:
+    - id: 6
+      kind: circle
+      points:
+      - 5
+      radius: 1
+    constraints:
+    - kind: fix
+      points:
+      - 5
+    dimensions:
+    - kind: diameter
+      curves:
+      - 6
+      expression: d1
+  features:
+  - kind: loft
+    name: Loft1
+    loft:
+      sections:
+      - sketch: 0
+        profile: 0
+      - sketch: 1
+        profile: 0
+      operation: newBody
