@@ -8,23 +8,9 @@ on:
     branches: [main]
 
 jobs:
-  # Job 1 — the gate. Builds the pure core + the stub-linked adapter and runs the
-  # test suite on a stock runner (no NX install needed).
-  core:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-      - name: Build
-        run: dotnet build -c Release
-      - name: Test
-        run: dotnet test -c Release --no-build --collect:"XPlat Code Coverage"
-
-  # Job 1b — the Python gate. Runs the pure Python core's pytest suite (the NXOpen
-  # adapter is excluded; it only runs in a live NX session) on a stock runner. Coverage
-  # must stay above the project's 80% bar.
+  # The gate. Runs the pure Python core's pytest suite (the NXOpen adapter is excluded; it
+  # only runs in a live NX session) on a stock runner. Coverage must stay above the
+  # project's 80% bar.
   python-core:
     runs-on: ubuntu-latest
     steps:
@@ -38,15 +24,15 @@ jobs:
         working-directory: python
         run: python -m pytest --cov=oblikovati_exporter_nx --cov-report=term-missing
 
-  # Job 2 — round-trip. Builds oblikovati-cli from the Oblikovati repo and opens every
-  # golden document the C# emitter produces, binding the emitter to the real reader.
-  roundtrip:
+  # Round-trip. Builds oblikovati-cli from the Oblikovati repo and opens every golden the
+  # exporter produces, binding the emitter to the real Go reader.
+  python-roundtrip:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-python@v5
         with:
-          dotnet-version: '8.0.x'
+          python-version: '3.10'
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.x'
@@ -71,55 +57,4 @@ jobs:
           go mod edit -replace oblikovati.org/api=../_oblikovati-api
           go build -o "$RUNNER_TEMP/oblikovati-cli" ./cmd/oblikovati-cli
       - name: Round-trip golden documents
-        run: scripts/roundtrip.sh "$RUNNER_TEMP/oblikovati-cli"
-
-  # Job 2b — Python round-trip. Same as Job 2, but opens the documents the PYTHON exporter
-  # emits, binding the Python emitter to the real Oblikovati reader.
-  python-roundtrip:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.26.x'
-      - name: Checkout Oblikovati (CLI reader)
-        uses: actions/checkout@v4
-        with:
-          repository: Oblikovati/Oblikovati
-          ref: develop
-          path: _oblikovati
-      - name: Checkout Oblikovati.API (contract sibling)
-        uses: actions/checkout@v4
-        with:
-          repository: Oblikovati/Oblikovati.API
-          path: _oblikovati-api
-      - name: Build oblikovati-cli
-        working-directory: _oblikovati
-        run: |
-          go mod edit -replace oblikovati.org/api=../_oblikovati-api
-          go build -o "$RUNNER_TEMP/oblikovati-cli" ./cmd/oblikovati-cli
-      - name: Round-trip golden documents (Python exporter)
         run: scripts/roundtrip_python.sh "$RUNNER_TEMP/oblikovati-cli" python
-
-  # Job 3 — binding check (opt-in). Compiles the NXOpen adapter against the REAL Siemens
-  # assemblies (-p:UseNxStubs=false) so the compiler flags any facade member that does not
-  # match the genuine NXOpen API — the verification the facade stub can't give. It runs only
-  # when the NX_OPEN_DIR repository variable is set (a self-hosted runner labelled `nx` with
-  # NX installed, or one carrying the NXOpen reference assemblies); otherwise it is skipped,
-  # so it never blocks PRs until the assemblies are available. Build only the adapter chain
-  # (Entry pulls Nx): the test project links the stub, so a whole-solution real build would
-  # clash on the "NXOpen" assembly name.
-  binding-check:
-    if: ${{ vars.NX_OPEN_DIR != '' }}
-    runs-on: [self-hosted, nx]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-      - name: Build adapter against the real NXOpen assemblies
-        shell: bash
-        run: dotnet build src/Exporter.NX.Entry -c Release -p:UseNxStubs=false -p:NxOpenDir="${{ vars.NX_OPEN_DIR }}"

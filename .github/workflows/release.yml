@@ -1,11 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
-# Publishes an installable release to GitHub Releases on every merge to main (and on
-# manual dispatch). The plugin is compiled against the NXOpen *facade* on a hosted runner
-# — the reference-assembly model: the shipped assemblies bind the assembly name "NXOpen",
-# which the real NXOpen.dll satisfies at load time inside NX (the facade stub is excluded
-# from the zip). This keeps releases automatic without a licensed NX in CI; alpha builds
-# are marked as prereleases and should be validated on a real NX install.
+# Publishes an installable release on every merge to main (and on manual dispatch). The
+# exporter is an NX Open Python journal — shipped as source and played by NX, so there is
+# nothing to compile or code-sign. Alpha builds are marked as prereleases and should be
+# validated on a real NX install.
 name: release
 
 on:
@@ -21,16 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
       - name: Compute version
         id: ver
         run: echo "version=0.1.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
-      - name: Publish the plugin (against the NXOpen facade)
-        run: dotnet publish src/Exporter.NX.Entry -c Release -o publish
-      - name: Package the UGII_USER_DIR zip (C# add-in)
-        run: scripts/package.sh publish "${{ steps.ver.outputs.version }}" "Oblikovati.Exporter.NX-${{ steps.ver.outputs.version }}.zip"
       - name: Package the UGII_USER_DIR zip (Python journal)
         run: scripts/package_python.sh "${{ steps.ver.outputs.version }}" "Oblikovati.Exporter.NX.Python-${{ steps.ver.outputs.version }}.zip"
       - name: Publish GitHub Release
@@ -38,17 +29,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "v${{ steps.ver.outputs.version }}" \
-            "Oblikovati.Exporter.NX-${{ steps.ver.outputs.version }}.zip" \
             "Oblikovati.Exporter.NX.Python-${{ steps.ver.outputs.version }}.zip" \
             --title "Oblikovati.Exporter.NX v${{ steps.ver.outputs.version }}" \
             --prerelease \
             --target "${{ github.sha }}" \
             --notes "Automated alpha build from ${{ github.sha }}.
 
-          Two editions, same native \`.opd\`/\`.oad\` output — pick one:
-          - **Oblikovati.Exporter.NX-<ver>.zip** — the compiled C# add-in (DLL against the NXOpen facade; see deploy/README.md).
-          - **Oblikovati.Exporter.NX.Python-<ver>.zip** — the NX Open **Python journal**; needs no compiled, code-signed DLL (see deploy-python/README.md).
+          An NX Open **Python journal** — needs no compiled, code-signed plug-in. Install: unzip into a folder and point NX at it via \`UGII_USER_DIR\`, or play \`startup/oblikovati_export.py\` directly (see deploy-python/README.md). The **Export to Oblikovati** item writes native \`.opd\`/\`.oad\` documents.
 
-          Install: unzip into a folder and point NX at it via \`UGII_USER_DIR\`. The **Export to Oblikovati** item writes native \`.opd\`/\`.oad\` documents.
-
-          Alpha builds; validate on your NX version before production use."
+          Alpha build; validate on your NX version before production use."
