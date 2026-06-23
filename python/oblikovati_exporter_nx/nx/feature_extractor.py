@@ -48,9 +48,19 @@ def extract(part, document, curve_tag_to_sketch: Dict[int, int]) -> None:
         extracted = _extract_feature(
             part, feature, document, curve_tag_to_sketch, feature_tag_to_index
         )
-        if extracted is not None:
+        # A feature may yield several IR features (a multi-bore hole package expands to one
+        # hole per drill centre); the tag maps to the last so a pattern can still bind it.
+        for nx in _as_features(extracted):
             feature_tag_to_index[feature.Tag] = len(document.features)
-            document.features.append(extracted)
+            document.features.append(nx)
+
+
+def _as_features(extracted) -> list:
+    if extracted is None:
+        return []
+    if isinstance(extracted, list):
+        return extracted
+    return [extracted]
 
 
 def _extract_feature(
@@ -230,18 +240,44 @@ def _draft(part, feature) -> NxDraft:
         builder.Destroy()
 
 
-def _hole(part, feature) -> NxHole:
+def _hole(part, feature) -> list:
+    # A hole package may drill at several positions; emit one IR hole per centre so each
+    # bore lands at its true point (the kernel projects the centre onto the placement face;
+    # a None centre falls back to the face centroid).
     builder = part.Features.CreateHolePackageBuilder(feature)
     try:
-        return NxHole(
-            name=feature.Name,
-            placement_face=face_geometry.describe(builder.PlacementFace),
-            diameter_mm=builder.Diameter.Value,
-            depth_mm=builder.Depth.Value,
-            through_all=builder.ThroughAll,
-        )
+        placement = face_geometry.describe(builder.PlacementFace)
+        diameter = builder.Diameter.Value
+        depth = builder.Depth.Value
+        through_all = builder.ThroughAll
+        return [
+            NxHole(
+                name=feature.Name,
+                placement_face=placement,
+                diameter_mm=diameter,
+                depth_mm=depth,
+                through_all=through_all,
+                center=center,
+            )
+            for center in _hole_centers(builder)
+        ]
     finally:
         builder.Destroy()
+
+
+# The drill centres of a hole package, read from its HolePosition section's points (model
+# space, mm). Returns [None] when no point is found, so the hole still drills at the centroid.
+def _hole_centers(builder) -> list:
+    section = getattr(builder, "HolePosition", None)
+    if section is None:
+        return [None]
+    centers = []
+    getter = getattr(section, "GetObjects", None)
+    for obj in (getter() if getter is not None else []):
+        coordinates = getattr(obj, "Coordinates", None)
+        if coordinates is not None:
+            centers.append([coordinates.X, coordinates.Y, coordinates.Z])
+    return centers if centers else [None]
 
 
 def _pattern(part, feature, feature_tag_to_index) -> Optional[NxFeature]:

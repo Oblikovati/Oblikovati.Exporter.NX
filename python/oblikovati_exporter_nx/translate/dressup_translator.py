@@ -61,6 +61,7 @@ def hole(feature: NxHole) -> FeatureData:
         through_all=True if feature.through_all else None,
         type="drilled",
         geom_face=_face_ref(feature.placement_face),
+        center=scale_point(feature.center) if feature.center is not None else None,
     )
     return FeatureData(kind="hole", name=_name_of(feature), payload_alias="hole", payload=payload)
 
